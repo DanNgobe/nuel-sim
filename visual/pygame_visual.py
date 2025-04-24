@@ -1,15 +1,11 @@
 import pygame
 import time
 import math
-
-WIDTH, HEIGHT = 800, 600
-RADIUS = 30
-SHOT_COLOR_HIT = (0, 255, 0)
-SHOT_COLOR_MISS = (255, 0, 0)
-BACKGROUND = (30, 30, 30)
-FPS = 1
-
-ARROW_SIZE = 15  # Size of the arrowhead
+from config import (
+    SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_RADIUS, FPS, ARROW_SIZE,
+    COLOR_BACKGROUND, COLOR_PLAYER_ALIVE, COLOR_PLAYER_DEAD,
+    COLOR_HIT, COLOR_MISS
+)
 
 def draw_arrow(screen, start_pos, end_pos, color):
     """Draws an arrow from start_pos to end_pos."""
@@ -29,28 +25,28 @@ def draw_arrow(screen, start_pos, end_pos, color):
     pygame.draw.polygon(screen, color, arrowhead)
 
 def draw_game(screen, players, history):
-    screen.fill(BACKGROUND)
+    screen.fill(COLOR_BACKGROUND)
 
     # Draw players
     for p in players:
-        color = (0, 150, 255) if p.alive else (100, 100, 100)
-        pygame.draw.circle(screen, color, (int(p.x), int(p.y)), RADIUS)
+        color = COLOR_PLAYER_ALIVE if p.alive else COLOR_PLAYER_DEAD
+        pygame.draw.circle(screen, color, (int(p.x), int(p.y)), PLAYER_RADIUS)
         font = pygame.font.SysFont(None, 24)
         label = font.render(p.name, True, (255, 255, 255))
-        screen.blit(label, (p.x - RADIUS, p.y - RADIUS - 20))
+        screen.blit(label, (p.x - PLAYER_RADIUS, p.y - PLAYER_RADIUS - 20))
 
     # Draw last shot (shooter -> target)
     if history:
         shooter, target, hit = history[-1]
         if shooter and target:
             # Draw arrow between shooter and target
-            line_color = SHOT_COLOR_HIT if hit else SHOT_COLOR_MISS
+            line_color = COLOR_HIT if hit else COLOR_MISS
             draw_arrow(screen, (shooter.x, shooter.y), (target.x, target.y), line_color)
     pygame.display.flip()
 
 def run_game_visual(game):
     pygame.init()
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Nuel Simulation")
     clock = pygame.time.Clock()
 

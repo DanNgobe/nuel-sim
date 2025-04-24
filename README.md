@@ -46,6 +46,11 @@ To run the game simulation with Pygame visualization:
 python main.py
 ```
 
+### 5. Configuration
+
+The game settings can be customized in the `config.py` file. This file allows you to adjust parameters such as the number of players, game mode, player attributes, and visual settings. 
+
+
 ## How to Play
 
 The simulation will start, and the players will take turns based on the configured game mode (sequential, simultaneous, or random). You can observe the interactions as arrows are drawn on the screen showing the shots from the shooters to their targets.
