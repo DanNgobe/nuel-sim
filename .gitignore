@@ -1,0 +1,16 @@
+# Python bytecode files
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment folder
+venv/
+
+# Pygame image cache (if you ever use pygame.image.load or similar)
+pygame_cache/
+
+# macOS specific files
+.DS_Store
+
+# Windows specific files
+Thumbs.db
