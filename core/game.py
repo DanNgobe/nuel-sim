@@ -4,7 +4,7 @@ class Game:
     def __init__(self, players, mode="sequential"):
         self.players = players
         self.history = []
-        self.turn = 0
+        self.last_shooter = None
         self.mode = mode  # "sequential", "simultaneous", or "random"
 
     def get_alive_players(self):
@@ -26,9 +26,23 @@ class Game:
         else:  # sequential or random
             if self.mode == "random":
                 shooter = random.choice(alive)
-            else:
-                shooter = alive[self.turn % len(alive)]
-            target = shooter.choose_target(alive)
-            hit = shooter.shoot(target)
-            self.history.append((shooter, target, hit))
-            self.turn += 1
+            else:  # sequential using last_shooter
+                shooter = None
+                start_index = 0
+
+                # If we have a last shooter, start from the next index
+                if self.last_shooter in self.players:
+                    start_index = (self.players.index(self.last_shooter) + 1) % len(self.players)
+
+                for i in range(len(self.players)):
+                    idx = (start_index + i) % len(self.players)
+                    candidate = self.players[idx]
+                    if candidate.alive:
+                        shooter = candidate
+                        break
+
+            if shooter:
+                target = shooter.choose_target(alive)
+                hit = shooter.shoot(target)
+                self.history.append((shooter, target, hit))
+                self.last_shooter = shooter
