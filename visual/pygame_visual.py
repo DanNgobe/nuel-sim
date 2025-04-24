@@ -31,9 +31,19 @@ def draw_game(screen, players, history):
     for p in players:
         color = COLOR_PLAYER_ALIVE if p.alive else COLOR_PLAYER_DEAD
         pygame.draw.circle(screen, color, (int(p.x), int(p.y)), PLAYER_RADIUS)
+
         font = pygame.font.SysFont(None, 24)
-        label = font.render(p.name, True, (255, 255, 255))
-        screen.blit(label, (p.x - PLAYER_RADIUS, p.y - PLAYER_RADIUS - 20))
+
+        # Render player name above the circle
+        name_label = font.render(p.name, True, (255, 255, 255))
+        screen.blit(name_label, (p.x - PLAYER_RADIUS, p.y - PLAYER_RADIUS - 20))
+
+        # Render marksmanship inside the circle (centered)
+        accuracy_text = f"{int(p.accuracy * 100)}%"
+        acc_label = font.render(accuracy_text, True, (255, 255, 255))
+        text_rect = acc_label.get_rect(center=(p.x, p.y))
+        screen.blit(acc_label, text_rect)
+
 
     # Draw last shot (shooter -> target)
     if history:
