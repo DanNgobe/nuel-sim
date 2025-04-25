@@ -1,17 +1,21 @@
 import random
 
 class Player:
-    def __init__(self, name, accuracy, x=0, y=0):
+    def __init__(self, name, accuracy, x=0, y=0, strategy=None):
         self.name = name
         self.accuracy = accuracy
         self.x = x
         self.y = y
         self.alive = True
+        self.strategy = strategy or self.default_strategy  # fallback if no strategy provided
+
+    def default_strategy(self, me, players):
+        """Default target selection: random alive enemy."""
+        alive = [p for p in players if p != me and p.alive]
+        return random.choice(alive) if alive else None
 
     def choose_target(self, players):
-        """Override or extend this for smarter targeting"""
-        alive = [p for p in players if p != self and p.alive]
-        return random.choice(alive) if alive else None
+        return self.strategy(self, players)
 
     def shoot(self, target):
         if not self.alive or not target or not target.alive:

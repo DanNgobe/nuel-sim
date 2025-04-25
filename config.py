@@ -1,8 +1,8 @@
 # config.py
 
 # Game Settings
-NUM_PLAYERS = 4
-GAME_MODE = "sequential"  # Options: 'sequential', 'simultaneous', 'random'
+NUM_PLAYERS = 10
+GAME_MODE = "simultaneous"  # Options: 'sequential', 'simultaneous', 'random'
 
 # Player Settings
 # INITIAL_HEALTH = 1.0
