@@ -3,7 +3,7 @@ import random
 class Game:
     def __init__(self, players, mode="sequential"):
         self.players = players
-        self.history = []
+        self.history = [] # [[(shooter, target, hit), ...], ...]
         self.last_shooter = None
         self.mode = mode  # "sequential", "simultaneous", or "random"
 
@@ -21,7 +21,7 @@ class Game:
                 target = shooter.choose_target(alive)
                 hit = shooter.shoot(target)
                 shots.append((shooter, target, hit))
-            self.history.extend(shots)
+            self.history.append(shots)
 
         else:  # sequential or random
             if self.mode == "random":
@@ -44,5 +44,5 @@ class Game:
             if shooter:
                 target = shooter.choose_target(alive)
                 hit = shooter.shoot(target)
-                self.history.append((shooter, target, hit))
+                self.history.append([(shooter, target, hit)])
                 self.last_shooter = shooter

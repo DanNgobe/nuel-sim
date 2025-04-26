@@ -45,13 +45,14 @@ def draw_game(screen, players, history):
         screen.blit(acc_label, text_rect)
 
 
-    # Draw last shot (shooter -> target)
+    # Draw last rounds shots (shooter -> target)
     if history:
-        shooter, target, hit = history[-1]
-        if shooter and target:
+        for shooter, target, hit in history[-1]:
             # Draw arrow between shooter and target
-            line_color = COLOR_HIT if hit else COLOR_MISS
-            draw_arrow(screen, (shooter.x, shooter.y), (target.x, target.y), line_color)
+            if shooter and target:
+                # Draw arrow between shooter and target
+                line_color = COLOR_HIT if hit else COLOR_MISS
+                draw_arrow(screen, (shooter.x, shooter.y), (target.x, target.y), line_color)
     pygame.display.flip()
 
 def run_game_visual(game):
