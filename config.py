@@ -1,10 +1,10 @@
 # config.py
 
 from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePlay, CounterAttackGamePlay, EvenOddGruelGamePlay
-
-
 GAME_PLAY = SequentialGamePlay()
 
+from core.strategies import target_strongest, target_weakest, target_stronger, target_stronger_or_strongest, target_nearest
+DEFAULT_STRATEGY = target_nearest
 
 # Game Settings
 NUM_PLAYERS = 10
