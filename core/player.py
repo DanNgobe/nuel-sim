@@ -20,7 +20,4 @@ class Player:
     def shoot(self, target):
         if not self.alive or not target or not target.alive:
             return False
-        hit = random.random() < self.accuracy
-        if hit:
-            target.alive = False
-        return hit
+        return random.random() < self.accuracy

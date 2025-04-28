@@ -19,5 +19,5 @@ def create_players(n):
 
 if __name__ == "__main__":
     players = create_players(config.NUM_PLAYERS)
-    game = Game(players, mode=config.GAME_MODE)
+    game = Game(players, gameplay=config.GAME_PLAY)
     run_game_visual(game)

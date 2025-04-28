@@ -1,8 +1,13 @@
 # config.py
 
+from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePlay, CounterAttackGamePlay, EvenOddGruelGamePlay
+
+
+GAME_PLAY = SequentialGamePlay()
+
+
 # Game Settings
 NUM_PLAYERS = 10
-GAME_MODE = "simultaneous"  # Options: 'sequential', 'simultaneous', 'random'
 
 # Player Settings
 # INITIAL_HEALTH = 1.0
