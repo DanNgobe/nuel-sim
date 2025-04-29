@@ -1,0 +1,12 @@
+# marl/settings.py
+NUM_EPISODES = 20000
+GAMMA = 0.99
+LEARNING_RATE = 1e-3
+EPSILON_START = 1.0
+EPSILON_END = 0.05
+EPSILON_DECAY = 0.995
+BATCH_SIZE = 64
+MEMORY_SIZE = 10000
+TARGET_UPDATE_FREQ = 10  # How often to update target network
+HIDDEN_SIZE = 128
+DEVICE = "cpu"  # or "cuda"

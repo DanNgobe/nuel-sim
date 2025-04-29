@@ -1,4 +1,5 @@
 import random
+import config
 
 class Player:
     def __init__(self, name, accuracy, x=0, y=0, strategy=None):
@@ -7,7 +8,7 @@ class Player:
         self.x = x
         self.y = y
         self.alive = True
-        self.strategy = strategy or self.default_strategy  # fallback if no strategy provided
+        self.strategy = strategy or config.DEFAULT_STRATEGY
 
     def default_strategy(self, me, players):
         """Default target selection: random alive enemy."""

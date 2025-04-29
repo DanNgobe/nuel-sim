@@ -13,6 +13,11 @@ def target_stronger(me, players):
     alive = [p for p in players if p != me and p.alive]
     return max(alive, key=lambda p: p.accuracy - me.accuracy, default=None)
 
+def target_random(me, players):
+    alive = [p for p in players if p != me and p.alive]
+    return random.choice(alive) if alive else None
+
+
 # Xu's strategy (truels)
 def target_stronger_or_strongest(me, players): 
     stronger = target_stronger(me, players)

@@ -1,17 +1,17 @@
 # config.py
 
 from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePlay, CounterAttackGamePlay, EvenOddGruelGamePlay
-GAME_PLAY = SequentialGamePlay()
+GAME_PLAY = SimultaneousGamePlay()
 
-from core.strategies import target_strongest, target_weakest, target_stronger, target_stronger_or_strongest, target_nearest
-DEFAULT_STRATEGY = target_nearest
+from core.strategies import target_strongest, target_weakest, target_stronger, target_stronger_or_strongest, target_nearest, target_random
+DEFAULT_STRATEGY = target_random
 
 # Game Settings
-NUM_PLAYERS = 10
+NUM_PLAYERS = 3
 
 # Player Settings
 # INITIAL_HEALTH = 1.0
-MARKSMANSHIP_RANGE = (0.4, 0.9)
+MARKSMANSHIP_RANGE = (0.3, 0.9)
 
 # Pygame Visual Settings
 SCREEN_WIDTH = 800
