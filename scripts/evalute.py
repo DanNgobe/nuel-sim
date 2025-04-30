@@ -66,4 +66,4 @@ def evaluate(num_episodes=100):
     plt.show()
 
 if __name__ == "__main__":
-    evaluate(num_episodes=2000)
+    evaluate(num_episodes=500)
