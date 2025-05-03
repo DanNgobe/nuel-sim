@@ -1,20 +1,15 @@
 # marl/train.py
+from core import Game, Player
+from marl.replay_buffer import ReplayBuffer
+from marl.strategy import create_agent, agent_based_strategy, create_observation
 import marl.settings as settings
 import config
-from marl.agent import SharedAgent
-from marl.replay_buffer import ReplayBuffer
-from core.game import Game
-from core.player import Player
 import torch
 import random
-from marl.strategy import create_observation, agent_based_strategy, ACTION_DIM, OBS_DIM
 
 def main():
     num_players = config.NUM_PLAYERS
-    obs_dim = OBS_DIM
-    action_dim = ACTION_DIM
-
-    agent = SharedAgent(observation_dim=obs_dim, action_dim=action_dim)
+    agent = create_agent(num_players, model_path=config.get_model_path(num_players, game_play=config.GAME_PLAY))
     replay_buffer = ReplayBuffer(settings.MEMORY_SIZE)
 
     episodes = settings.NUM_EPISODES
@@ -70,7 +65,7 @@ def main():
             print(f"Episode {episode}: Epsilon={agent.epsilon:.3f}")
 
     # Save model after training
-    torch.save(agent.policy_net.state_dict(), f"marl/models/policy_net_{config.GAME_PLAY.__class__.__name__}_{num_players}.pth")
+    torch.save(agent.policy_net.state_dict(), config.get_model_path(num_players, game_play=config.GAME_PLAY))
     print("Training completed and model saved.")
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ from marl.network import PolicyNetwork
 import marl.settings as settings
 
 class SharedAgent:
-    def __init__(self, observation_dim, action_dim):
+    def __init__(self, observation_dim, action_dim, model_path=None):
         self.policy_net = PolicyNetwork(observation_dim, action_dim, settings.HIDDEN_SIZE).to(settings.DEVICE)
         self.target_net = PolicyNetwork(observation_dim, action_dim, settings.HIDDEN_SIZE).to(settings.DEVICE)
         self.target_net.load_state_dict(self.policy_net.state_dict())
@@ -15,6 +15,9 @@ class SharedAgent:
         self.action_dim = action_dim
         self.observation_dim = observation_dim
 
+        if model_path:
+            self.policy_net.load_state_dict(torch.load(model_path, map_location=settings.DEVICE))
+            
     def act(self, obs, explore=True):
         if not torch.is_tensor(obs):
             obs = torch.tensor(obs, dtype=torch.float32, device=settings.DEVICE).unsqueeze(0)

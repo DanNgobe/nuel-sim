@@ -3,8 +3,8 @@ import config as config
 from core.game import Game
 from core.player import Player
 import random
+import argparse
 import matplotlib.pyplot as plt
-from marl.strategy import agent_strategy
 
 def evaluate(num_episodes=100):
     num_players = config.NUM_PLAYERS
@@ -15,7 +15,7 @@ def evaluate(num_episodes=100):
         players = []
         for i in range(num_players):
             accuracy = random.uniform(0.3, 0.9)
-            players.append(Player(f"P{i}", accuracy=accuracy, strategy=agent_strategy()))
+            players.append(Player(f"P{i}", accuracy=accuracy, strategy=config.DEFAULT_STRATEGY))
         sorted_accuracy = sorted(players, key=lambda p: p.accuracy, reverse=False) # from worst to best
         
         game = Game(players, gameplay=config.GAME_PLAY)
@@ -66,4 +66,9 @@ def evaluate(num_episodes=100):
     plt.show()
 
 if __name__ == "__main__":
-    evaluate(num_episodes=500)
+
+    parser = argparse.ArgumentParser(description="Evaluate game performance.")
+    parser.add_argument("--episodes", type=int, default=2000, help="Number of episodes to run (default: 2000)")
+    args = parser.parse_args()
+
+    evaluate(num_episodes=args.episodes)

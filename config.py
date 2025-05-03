@@ -1,13 +1,16 @@
-# config.py
+get_model_path = lambda num_players, game_play: f"marl/models/policy_net_{game_play.__class__.__name__}_{num_players}.pth"
 
+# config.py
+from marl.strategy import create_agent, agent_based_strategy
 from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePlay, CounterAttackGamePlay, EvenOddGruelGamePlay
 GAME_PLAY = SequentialGamePlay()
 
 from core.strategies import target_strongest, target_weakest, target_stronger, target_stronger_or_strongest, target_nearest, target_random
-DEFAULT_STRATEGY = target_strongest
 
 # Game Settings
 NUM_PLAYERS = 3
+MARL_AGENT = create_agent(NUM_PLAYERS, model_path=get_model_path(NUM_PLAYERS, GAME_PLAY), is_evaluation=True)
+DEFAULT_STRATEGY = agent_based_strategy(MARL_AGENT, explore=False)
 
 # Player Settings
 # INITIAL_HEALTH = 1.0
