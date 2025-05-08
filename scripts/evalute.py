@@ -14,8 +14,9 @@ def evaluate(num_episodes=100):
     for episode in range(num_episodes):
         players = []
         for i in range(num_players):
-            accuracy = random.uniform(0.3, 0.9)
-            players.append(Player(f"P{i}", accuracy=accuracy, strategy=config.DEFAULT_STRATEGY))
+            accuracy = config.ASSIGNED_DEFAULT_ACCURACIES[i] if i < len(config.ASSIGNED_DEFAULT_ACCURACIES) else random.uniform(*config.MARKSMANSHIP_RANGE)
+            strategy = config.ASSIGNED_DEFAULT_STRATEGIES[i] if i < len(config.ASSIGNED_DEFAULT_STRATEGIES) else config.DEFAULT_STRATEGY
+            players.append(Player(f"P{i}", accuracy=accuracy, strategy=strategy))
         sorted_accuracy = sorted(players, key=lambda p: p.accuracy, reverse=False) # from worst to best
         
         game = Game(players, gameplay=config.GAME_PLAY)

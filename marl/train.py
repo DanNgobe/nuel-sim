@@ -6,20 +6,20 @@ import marl.settings as settings
 import config
 import torch
 import random
+import argparse
 
-def main():
+def main(episodes=2000):
     num_players = config.NUM_PLAYERS
     agent = create_agent(num_players, model_path=config.get_model_path(num_players, game_play=config.GAME_PLAY))
     replay_buffer = ReplayBuffer(settings.MEMORY_SIZE)
 
-    episodes = settings.NUM_EPISODES
 
     for episode in range(episodes):
         # Create fresh players each episode
         players = []
         for i in range(num_players):
             accuracy = random.uniform(*config.MARKSMANSHIP_RANGE)  # players have different accuracies
-            players.append(Player(f"P{i}", accuracy=accuracy, strategy=agent_based_strategy(agent)))
+            players.append(Player(f"P{i}", accuracy=accuracy, strategy=agent_based_strategy(agent, explore=True)))
 
         game = Game(players, gameplay=config.GAME_PLAY)
 
@@ -69,4 +69,11 @@ def main():
     print("Training completed and model saved.")
 
 if __name__ == "__main__":
-    main()
+
+    parser = argparse.ArgumentParser(description="Evaluate game performance.")
+    parser.add_argument("--episodes", type=int, default=2000, help="Number of episodes to run (default: 2000)")
+    args = parser.parse_args()
+
+    main(episodes=args.episodes)
+
+    

@@ -12,8 +12,9 @@ def create_players(n):
         angle = 2 * math.pi * i / n
         x = center_x + radius * math.cos(angle)
         y = center_y + radius * math.sin(angle)
-        accuracy = random.uniform(*config.MARKSMANSHIP_RANGE)
-        players.append(Player(f"P{i+1}", accuracy=accuracy, x=x, y=y, strategy=config.DEFAULT_STRATEGY))
+        accuracy = config.ASSIGNED_DEFAULT_ACCURACIES[i] if i < len(config.ASSIGNED_DEFAULT_ACCURACIES) else random.uniform(*config.MARKSMANSHIP_RANGE)
+        strategy = config.ASSIGNED_DEFAULT_STRATEGIES[i] if i < len(config.ASSIGNED_DEFAULT_STRATEGIES) else config.DEFAULT_STRATEGY
+        players.append(Player(f"P{i+1}", accuracy=accuracy, x=x, y=y, strategy=strategy))
     return players
 
 if __name__ == "__main__":

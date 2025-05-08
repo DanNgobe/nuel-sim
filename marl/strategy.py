@@ -1,4 +1,5 @@
 #marl/strategy.py
+import os
 from marl.agent import SharedAgent
 
 def create_observation(player, players):
@@ -47,6 +48,9 @@ def create_agent(num_players, model_path=None, is_evaluation=False):
     """Creates a shared agent with the given number of players."""
     observation_dim = get_observation_dim(num_players)
     action_dim = get_action_dim(num_players)
+    if not os.path.exists(model_path):
+        model_path = None
+        print("Model path does not exist.")
     agent = SharedAgent(observation_dim, action_dim, model_path=model_path)
     if is_evaluation:
         agent.policy_net.eval()
