@@ -1,7 +1,8 @@
 import torch
 import seaborn as sns
 import matplotlib.pyplot as plt
-from marl.strategy import create_agent, create_observation
+from marl.utils import create_agent
+from marl.settings import OBSERVATION_MODEL
 from core import Player
 import config
 import random
@@ -27,7 +28,7 @@ for i in range(num_players):
 fig, axs = plt.subplots(nrows=num_players, figsize=(10, 1.5 * num_players), squeeze=False)
 
 for i, player in enumerate(players):
-    obs = create_observation(player, players)
+    obs = OBSERVATION_MODEL.create_observation(player, players)
     obs_tensor = torch.tensor([obs], dtype=torch.float32).to(device)
 
     with torch.no_grad():

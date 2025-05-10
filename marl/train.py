@@ -1,8 +1,8 @@
 # marl/train.py
 from core import Game, Player
 from marl.replay_buffer import ReplayBuffer
-from marl.strategy import create_agent, agent_based_strategy, create_observation
-import marl.settings as settings
+from marl.utils import create_agent, agent_based_strategy
+from marl.settings import MEMORY_SIZE, TARGET_UPDATE_FREQ, OBSERVATION_MODEL
 import config
 import torch
 import random
@@ -11,7 +11,7 @@ import argparse
 def main(episodes=2000):
     num_players = config.NUM_PLAYERS
     agent = create_agent(num_players, model_path=config.get_model_path(num_players, game_play=config.GAME_PLAY))
-    replay_buffer = ReplayBuffer(settings.MEMORY_SIZE)
+    replay_buffer = ReplayBuffer(MEMORY_SIZE)
 
 
     for episode in range(episodes):
@@ -25,7 +25,7 @@ def main(episodes=2000):
 
         done = False
         while not done:
-            prev_obs = {player.name: [player.alive, create_observation(player, players)] for player in players} # store observations for all players
+            prev_obs = {player.name: [player.alive, OBSERVATION_MODEL.create_observation(player, players)] for player in players} # store observations for all players
             game.run_turn()
             done = game.is_over()
             last_history = game.history[-1] # last turn's history [(shooter, target, hit), ...]
@@ -47,15 +47,17 @@ def main(episodes=2000):
                     if done and shooter.alive:
                         reward += 5.0  # winning bonus
 
-                    next_obs = create_observation(shooter, players)
+                    next_obs = OBSERVATION_MODEL.create_observation(shooter, players)
+
                     others = [p for p in players if p != shooter]
                     action = others.index(target)
 
                     replay_buffer.push(shooter_obs, action, reward, next_obs, done)
             agent.update(replay_buffer)
 
+        agent.decay_epsilon(episode)
         # Update target network periodically
-        if episode % settings.TARGET_UPDATE_FREQ == 0:
+        if episode % TARGET_UPDATE_FREQ == 0:
             agent.update_target_network()
 
         # Small printout

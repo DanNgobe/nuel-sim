@@ -1,4 +1,6 @@
 # marl/settings.py
+import torch
+
 GAMMA = 0.99 # Discount factor for future rewards (closer to 1 makes agent more future-oriented)
 LEARNING_RATE = 1e-3
 EPSILON_START = 1.0
@@ -8,4 +10,4 @@ BATCH_SIZE = 64
 MEMORY_SIZE = 10000
 TARGET_UPDATE_FREQ = 100  # How often to update target network
 HIDDEN_SIZE = 128
-DEVICE = "cpu"  # or "cuda"
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

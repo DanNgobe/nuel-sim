@@ -1,9 +1,12 @@
+# config.py
 get_model_path = lambda num_players, game_play: f"marl/models/policy_net_{game_play.__class__.__name__}_{num_players}.pth"
 
-# config.py
-from marl.strategy import create_agent, agent_based_strategy
+from marl.utils import create_agent, agent_based_strategy
+from .observation import AccuracyObservation, IndexAccuracyObservation
 from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePlay, CounterAttackGamePlay, EvenOddGruelGamePlay
+
 GAME_PLAY = SimultaneousGamePlay()
+OBSERVATION_MODEL = AccuracyObservation()
 
 from core.strategies import target_strongest, target_weakest, target_stronger, target_stronger_or_strongest, target_nearest, target_random
 
