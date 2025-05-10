@@ -14,5 +14,3 @@ pygame_cache/
 
 # Windows specific files
 Thumbs.db
-
-marl/models/*

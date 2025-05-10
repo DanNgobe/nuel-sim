@@ -32,16 +32,15 @@ def get_observation_dim(num_players):
 
 def get_action_dim(num_players):
     """Returns the dimension of the action space."""
-    return num_players  # one action per player
+    return num_players - 1
 
 def agent_based_strategy(agent, explore=True):
     """Returns a function that uses the agent to pick targets deterministically."""
     def strategy(player, players):
         obs = create_observation(player, players)
         action = agent.act(obs, explore)
-        # Choose among players
-        action = min(action, len(players) - 1)  # safety
-        return players[action]
+        others = [pl for pl in players if pl != player]
+        return others[action]
     return strategy
 
 def create_agent(num_players, model_path=None, is_evaluation=False):

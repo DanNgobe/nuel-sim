@@ -37,10 +37,7 @@ def main(episodes=2000):
                     
                     if not prev_obs[target.name][0]:
                         reward -= 1.0 # punish for shooting dead players
-                    
-                    if shooter.name == target.name:
-                        reward -= 1.0 # punish for shooting oneself
-                    
+                     
                     if hit:
                         reward += 1.0  # hit bonus
                     
@@ -51,7 +48,8 @@ def main(episodes=2000):
                         reward += 5.0  # winning bonus
 
                     next_obs = create_observation(shooter, players)
-                    action = players.index(target)
+                    others = [p for p in players if p != shooter]
+                    action = others.index(target)
 
                     replay_buffer.push(shooter_obs, action, reward, next_obs, done)
             agent.update(replay_buffer)
