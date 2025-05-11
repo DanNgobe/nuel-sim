@@ -3,7 +3,7 @@ get_model_path = lambda num_players, game_play: f"marl/models/policy_net_{game_p
 
 from .observation import  IndexAccuracyObservation
 from marl.utils import create_agent, agent_based_strategy
-from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePlay, CounterAttackGamePlay, EvenOddGruelGamePlay
+from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePlay, CounterAttackRandomGamePlay, EvenOddGruelGamePlay
 
 GAME_PLAY = RandomGamePlay()
 
