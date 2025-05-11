@@ -42,16 +42,27 @@ class SharedAgent:
         dones = torch.tensor(dones, dtype=torch.float32, device=settings.DEVICE)
 
         q_values = self.policy_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
-        next_q_values = self.target_net(next_states).max(1)[0]
+
+        # Avoids overestimation by decoupling action selection and evaluation
+        # Select action with max Q-value from policy net
+        # Evaluate using target net
+        next_actions = self.policy_net(next_states).argmax(1, keepdim=True) 
+        next_q_values = self.target_net(next_states).gather(1, next_actions).squeeze(1) # or next_q_values = self.target_net(next_states).max(1)[0]
+        
         expected_q = rewards + settings.GAMMA * next_q_values * (1 - dones)
 
         loss = F.mse_loss(q_values, expected_q)
 
         self.optimizer.zero_grad()
         loss.backward()
-        self.optimizer.step()
 
-        self.epsilon = max(settings.EPSILON_END, self.epsilon * settings.EPSILON_DECAY)
+        # Gradient clipping to prevent exploding gradients
+        torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.0)
+        self.optimizer.step()
 
     def update_target_network(self):
         self.target_net.load_state_dict(self.policy_net.state_dict())
+    
+    def decay_epsilon(self, episode):
+        self.epsilon = settings.EPSILON_END + (settings.EPSILON_START - settings.EPSILON_END) * \
+                   (settings.EPSILON_DECAY ** episode)

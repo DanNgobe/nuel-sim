@@ -1,7 +1,6 @@
 import torch
 import seaborn as sns
 import matplotlib.pyplot as plt
-from marl.strategy import create_agent, create_observation
 from core import Player
 import config
 import random
@@ -10,15 +9,13 @@ import numpy as np
 # Settings
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 num_players = config.NUM_PLAYERS
-model_path = config.get_model_path(num_players, game_play=config.GAME_PLAY)
 
-# Create agent
-agent = create_agent(num_players, model_path=model_path, is_evaluation=True)
+agent = config.MARL_AGENT
 
 # Simulate a game state
 players = []
 for i in range(num_players):
-    accuracy = random.uniform(*config.MARKSMANSHIP_RANGE)
+    accuracy = config.ASSIGNED_DEFAULT_ACCURACIES[i] if i < len(config.ASSIGNED_DEFAULT_ACCURACIES) else random.uniform(*config.MARKSMANSHIP_RANGE)
     player = Player(f"P{i}", accuracy=accuracy)
     player.alive = random.choice([True, True, True, False])  # Mostly alive, some dead
     players.append(player)
@@ -27,7 +24,7 @@ for i in range(num_players):
 fig, axs = plt.subplots(nrows=num_players, figsize=(10, 1.5 * num_players), squeeze=False)
 
 for i, player in enumerate(players):
-    obs = create_observation(player, players)
+    obs = config.OBSERVATION_MODEL.create_observation(player, players)
     obs_tensor = torch.tensor([obs], dtype=torch.float32).to(device)
 
     with torch.no_grad():
