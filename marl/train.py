@@ -38,8 +38,8 @@ def main(episodes=2000):
                     if not prev_obs[target.name][0]:
                         reward -= 1.0 # punish for shooting dead players
                      
-                    if hit:
-                        reward += 1.0  # hit bonus
+                    # if hit: # This is bad, agent could learn to gang up on one weak player just to get the reward
+                    #     reward += 1.0  # hit bonus
                     
                     if shooter.alive:
                         reward += 0.1 # survival bonus
