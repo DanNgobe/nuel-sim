@@ -10,7 +10,7 @@ import argparse
 
 def main(episodes=2000):
     num_players = config.NUM_PLAYERS
-    agent = create_agent(config.OBSERVATION_MODEL, model_path=config.get_model_path(num_players, game_play=config.GAME_PLAY))
+    agent = create_agent(config.OBSERVATION_MODEL, model_path=config.get_model_path(num_players, game_play=config.GAME_PLAY, observation_model=config.OBSERVATION_MODEL))
     replay_buffer = ReplayBuffer(MEMORY_SIZE)
 
 
@@ -48,9 +48,8 @@ def main(episodes=2000):
                         reward += 5.0  # winning bonus
 
                     next_obs = config.OBSERVATION_MODEL.create_observation(shooter, players)
-
-                    others = [p for p in players if p != shooter]
-                    action = others.index(target)
+                    targets = config.OBSERVATION_MODEL.get_targets(shooter, players)
+                    action = targets.index(target)
 
                     replay_buffer.push(shooter_obs, action, reward, next_obs, done)
             agent.update(replay_buffer)
@@ -65,7 +64,7 @@ def main(episodes=2000):
             print(f"Episode {episode}: Epsilon={agent.epsilon:.3f}")
 
     # Save model after training
-    torch.save(agent.policy_net.state_dict(), config.get_model_path(num_players, game_play=config.GAME_PLAY))
+    torch.save(agent.policy_net.state_dict(), config.get_model_path(num_players, game_play=config.GAME_PLAY, observation_model=config.OBSERVATION_MODEL))
     print("Training completed and model saved.")
 
 if __name__ == "__main__":

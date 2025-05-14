@@ -1,2 +1,4 @@
 from .index_accuracy_observation import IndexAccuracyObservation
+from .sorted_accuracy_observation import SortedAccuracyObservation
+from .threat_level_observation import ThreatLevelObservation
 from .observation_model import ObservationModel

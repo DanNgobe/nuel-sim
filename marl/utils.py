@@ -21,6 +21,6 @@ def agent_based_strategy(observation_model: ObservationModel, agent: SharedAgent
     def strategy(player, players):
         obs = observation_model.create_observation(player, players)
         action = agent.act(obs, explore)
-        others = [pl for pl in players if pl != player]
-        return others[action]
+        targets = observation_model.get_targets(player, players)
+        return targets[action]
     return strategy

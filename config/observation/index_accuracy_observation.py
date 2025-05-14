@@ -26,4 +26,6 @@ class IndexAccuracyObservation(ObservationModel):
     
     def get_action_dim(self):
         return self.num_players - 1
-
+    
+    def get_targets(self, player, players):
+        return [p for p in players if p != player]

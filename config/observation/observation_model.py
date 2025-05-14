@@ -9,3 +9,6 @@ class ObservationModel(ABC):
 
     @abstractmethod
     def get_action_dim(self): pass
+
+    @abstractmethod
+    def get_targets(self, player, players): pass

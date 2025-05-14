@@ -1,18 +1,18 @@
 # settings.py
-get_model_path = lambda num_players, game_play: f"marl/models/policy_net_{game_play.__class__.__name__}_{num_players}.pth"
+get_model_path = lambda num_players, game_play, observation_model: f"marl/models/{num_players}_{game_play.__class__.__name__}_{observation_model.__class__.__name__}.pth"
 
-from .observation import  IndexAccuracyObservation
+from .observation import  IndexAccuracyObservation, SortedAccuracyObservation
 from marl.utils import create_agent, agent_based_strategy
 from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePlay, CounterAttackRandomGamePlay, EvenOddGruelGamePlay
 
-GAME_PLAY = RandomGamePlay()
+GAME_PLAY = SimultaneousGamePlay()
 
 from core.strategies import target_strongest, target_weakest, target_stronger, target_stronger_or_strongest, target_nearest, target_random
 
 # Game Settings
-NUM_PLAYERS = 4
-OBSERVATION_MODEL = IndexAccuracyObservation(num_players=NUM_PLAYERS, game_play=GAME_PLAY)
-MARL_AGENT = create_agent(OBSERVATION_MODEL, model_path=get_model_path(NUM_PLAYERS, GAME_PLAY), is_evaluation=True)
+NUM_PLAYERS = 5
+OBSERVATION_MODEL = SortedAccuracyObservation(num_players=NUM_PLAYERS)
+MARL_AGENT = create_agent(OBSERVATION_MODEL, model_path=get_model_path(NUM_PLAYERS, GAME_PLAY, OBSERVATION_MODEL), is_evaluation=True)
 DEFAULT_STRATEGY = agent_based_strategy(OBSERVATION_MODEL, MARL_AGENT, explore=False)
 
 # Player Settings
