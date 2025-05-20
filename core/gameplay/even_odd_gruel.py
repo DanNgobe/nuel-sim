@@ -2,7 +2,7 @@ import random
 from .base import GamePlay
 
 class EvenOddGruelGamePlay(GamePlay):
-    def choose_shooters(self, alive_players, last_shooter):
+    def choose_shooters(self, alive_players):
         return alive_players[:]  # all alive players participate
 
     def conduct_shots(self, shooters, players):

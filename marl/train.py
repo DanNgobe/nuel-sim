@@ -19,9 +19,9 @@ def main(episodes=2000):
         players = []
         for i in range(num_players):
             accuracy = random.uniform(*config.MARKSMANSHIP_RANGE)  # players have different accuracies
-            players.append(Player(f"P{i}", accuracy=accuracy, strategy=agent_based_strategy(config.OBSERVATION_MODEL,agent, explore=True)))
+            players.append(Player(id=i, name=f"P{i}", accuracy=accuracy, strategy=agent_based_strategy(config.OBSERVATION_MODEL,agent, explore=True)))
 
-        game = Game(players, gameplay=config.GAME_PLAY)
+        game = Game(players, gameplay=config.GAME_PLAY, observation_model=config.OBSERVATION_MODEL, max_rounds=config.NUM_ROUNDS)
 
         done = False
         while not done:

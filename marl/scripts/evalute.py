@@ -21,10 +21,10 @@ def evaluate(num_episodes=100):
         for i in range(num_players):
             accuracy = config.ASSIGNED_DEFAULT_ACCURACIES[i] if i < len(config.ASSIGNED_DEFAULT_ACCURACIES) else random.uniform(*config.MARKSMANSHIP_RANGE)
             strategy = config.ASSIGNED_DEFAULT_STRATEGIES[i] if i < len(config.ASSIGNED_DEFAULT_STRATEGIES) else config.DEFAULT_STRATEGY
-            players.append(Player(f"P{i}", accuracy=accuracy, strategy=strategy))
+            players.append(Player(id=i, name=f"P{i}", accuracy=accuracy, strategy=strategy))
 
         sorted_accuracy = sorted(players, key=lambda p: p.accuracy)
-        game = Game(players, gameplay=config.GAME_PLAY)
+        game = Game(players, gameplay=config.GAME_PLAY, observation_model=config.OBSERVATION_MODEL, max_rounds=config.NUM_ROUNDS)
 
         while not game.is_over():
             alive = game.get_alive_players()

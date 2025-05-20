@@ -1,14 +1,14 @@
 import random
-import config
 
 class Player:
-    def __init__(self, name, accuracy, x=0, y=0, strategy=None):
+    def __init__(self, id, name, accuracy, x=0, y=0, strategy=None):
+        self.id = id
         self.name = name
         self.accuracy = accuracy
         self.x = x
         self.y = y
         self.alive = True
-        self.strategy = strategy or config.DEFAULT_STRATEGY
+        self.strategy = strategy or self.default_strategy
 
     def default_strategy(self, me, players):
         """Default target selection: random alive enemy."""
@@ -19,6 +19,6 @@ class Player:
         return self.strategy(self, players)
 
     def shoot(self, target):
-        if not self.alive or not target or not target.alive:
-            return False
+        if not self.alive or not target:
+            raise ValueError("Player is not alive or target is None")
         return random.random() < self.accuracy

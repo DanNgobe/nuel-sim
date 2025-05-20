@@ -1,6 +1,6 @@
 import os
 from marl.agent import SharedAgent
-from config.observation import ObservationModel
+from core.observation import ObservationModel
 
 def create_agent(observation_model: ObservationModel, model_path=None, is_evaluation=False):
     observation_dim = observation_model.get_observation_dim()

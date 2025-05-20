@@ -1,11 +1,15 @@
-class GamePlay:
+from abc import ABC, abstractmethod
+
+class GamePlay(ABC):
+    """Abstract base class for game play strategies."""
+    
+    @abstractmethod
+    def choose_shooters(self, eligible_players):
+        pass
 
     def is_over(self, players):
         alive_players = [player for player in players if player.alive]
         return len(alive_players) <= 1
-
-    def choose_shooters(self, alive_players, last_shooter):
-        raise NotImplementedError
 
     def conduct_shots(self, shooters, players):
         shots = []

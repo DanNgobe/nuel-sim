@@ -16,7 +16,7 @@ agent = config.MARL_AGENT
 players = []
 for i in range(num_players):
     accuracy = config.ASSIGNED_DEFAULT_ACCURACIES[i] if i < len(config.ASSIGNED_DEFAULT_ACCURACIES) else random.uniform(*config.MARKSMANSHIP_RANGE)
-    player = Player(f"P{i}", accuracy=accuracy)
+    player = Player(id=i, name=f"P{i}", accuracy=accuracy)
     player.alive = random.choice([True, True, True, False])  # Mostly alive, some dead
     players.append(player)
 

@@ -2,8 +2,8 @@ from .base import GamePlay
 
 # All players shoot at the same time
 class SimultaneousGamePlay(GamePlay):
-    def choose_shooters(self, alive_players, last_shooter):
-        return alive_players[:]  # all alive players shoot at the same time
+    def choose_shooters(self, eligible_players):
+        return eligible_players[:]  # all eligible players shoot at the same time
 
     def process_shots(self, shots):
         # Phase 2: resolve shots after all shooting
