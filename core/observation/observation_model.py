@@ -2,6 +2,11 @@ from abc import ABC, abstractmethod
 from core.player import Player
 
 class NullObservationModel:
+    @property
+    def name(self) -> str:
+        """Name of the null observation model."""
+        return "NullObservationModel"
+
     def initialize(self, players: list[Player]):
         """Null observation model does nothing."""
         pass
@@ -13,6 +18,12 @@ class NullObservationModel:
         pass
 
 class ObservationModel(NullObservationModel, ABC):
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Name of the observation model."""
+        pass
+
     @abstractmethod
     def create_observation(self, player: Player, players: list[Player]): pass
 

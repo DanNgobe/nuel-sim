@@ -1,23 +1,24 @@
 # settings.py
-get_model_path = lambda num_players, game_play, observation_model: f"marl/models/{num_players}_{game_play.__class__.__name__}_{observation_model.__class__.__name__}.pth"
 
-from core.observation import  IndexAccuracyObservation, SortedAccuracyObservation, ThreatLevelObservation, BayesianObservationModel
+from core.observation import  ThreatLevelObservation, BayesianObservationModel, TurnAwareThreatObservation
 from marl.utils import create_agent, agent_based_strategy
 from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePlay, CounterAttackRandomGamePlay, EvenOddGruelGamePlay
 from core.strategies import target_strongest, target_weakest, target_stronger, target_stronger_or_strongest, target_nearest, target_random
 
 
-GAME_PLAY = SimultaneousGamePlay()
+GAME_PLAY = RandomGamePlay()
+HAS_GHOST = False
 
 # Game Settings
 NUM_PLAYERS = 5
-NUM_ROUNDS = None # None for infinite rounds
-OBSERVATION_MODEL = BayesianObservationModel(NUM_PLAYERS, setup_shots=10)
-MARL_AGENT = create_agent(OBSERVATION_MODEL, model_path=get_model_path(NUM_PLAYERS, GAME_PLAY, OBSERVATION_MODEL), is_evaluation=True)
+NUM_ROUNDS = None
+
+OBSERVATION_MODEL = ThreatLevelObservation(num_players=NUM_PLAYERS, has_ghost=HAS_GHOST)
+MODEL_PATH = f"marl/models/{NUM_PLAYERS}_{GAME_PLAY.__class__.__name__}_{OBSERVATION_MODEL.name}.pth"
+MARL_AGENT = create_agent(OBSERVATION_MODEL, model_path=MODEL_PATH, is_evaluation=True)
 DEFAULT_STRATEGY = agent_based_strategy(OBSERVATION_MODEL, MARL_AGENT, explore=False)
 
 # Player Settings
-# INITIAL_HEALTH = 1.0
 MARKSMANSHIP_RANGE = (0.3, 0.9)
 
 # Pygame Visual Settings

@@ -10,7 +10,7 @@ import argparse
 
 def main(episodes=2000):
     num_players = config.NUM_PLAYERS
-    agent = create_agent(config.OBSERVATION_MODEL, model_path=config.get_model_path(num_players, game_play=config.GAME_PLAY, observation_model=config.OBSERVATION_MODEL))
+    agent = create_agent(config.OBSERVATION_MODEL, model_path=config.MODEL_PATH, is_evaluation=False)
     replay_buffer = ReplayBuffer(MEMORY_SIZE)
 
 
@@ -20,7 +20,10 @@ def main(episodes=2000):
         for i in range(num_players):
             accuracy = random.uniform(*config.MARKSMANSHIP_RANGE)  # players have different accuracies
             players.append(Player(id=i, name=f"P{i}", accuracy=accuracy, strategy=agent_based_strategy(config.OBSERVATION_MODEL,agent, explore=True)))
-
+        
+        if (config.HAS_GHOST): # Create a ghost player
+            players.append(Player(id=num_players, name="Ghost", accuracy=-1, alive=False))
+       
         game = Game(players, gameplay=config.GAME_PLAY, observation_model=config.OBSERVATION_MODEL, max_rounds=config.NUM_ROUNDS)
 
         done = False
@@ -36,17 +39,21 @@ def main(episodes=2000):
                     reward = 0.0
                     
                     if not prev_obs[target.name][0]:
-                        reward -= 1.0 # punish for shooting dead players
+                        if target.name != "Ghost": # Shooting the ghost is not a problem
+                            reward -= 1.0 # punish for shooting dead players
                      
                     # if hit: # This is bad, agent could learn to gang up on one weak player just to get the reward
                     #     reward += 1.0  # hit bonus
                     
-                    if shooter.alive:
+                    if shooter.alive: # careful when there is abstention(players might exploit it)
                         reward += 0.1 # survival bonus
 
-                    if done and shooter.alive:
-                        reward += 5.0  # winning bonus
-
+                    if done:
+                        # Divide the winning bonus among all alive players
+                        alive_players = [p for p in players if p.alive]
+                        if shooter.alive and len(alive_players) > 0:
+                            reward += config.NUM_PLAYERS / len(alive_players)
+                            
                     next_obs = config.OBSERVATION_MODEL.create_observation(shooter, players)
                     targets = config.OBSERVATION_MODEL.get_targets(shooter, players)
                     action = targets.index(target)
@@ -64,7 +71,7 @@ def main(episodes=2000):
             print(f"Episode {episode}: Epsilon={agent.epsilon:.3f}")
 
     # Save model after training
-    torch.save(agent.policy_net.state_dict(), config.get_model_path(num_players, game_play=config.GAME_PLAY, observation_model=config.OBSERVATION_MODEL))
+    torch.save(agent.policy_net.state_dict(), config.MODEL_PATH)
     print("Training completed and model saved.")
 
 if __name__ == "__main__":

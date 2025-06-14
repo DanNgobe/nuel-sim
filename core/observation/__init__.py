@@ -1,6 +1,5 @@
-from .index_accuracy_observation import IndexAccuracyObservation
-from .sorted_accuracy_observation import SortedAccuracyObservation
 from .threat_level_observation import ThreatLevelObservation
 from .bayesian_observation_model import BayesianObservationModel
 from .observation_model import NullObservationModel
 from .observation_model import ObservationModel
+from .turn_aware_threat_observation import TurnAwareThreatObservation

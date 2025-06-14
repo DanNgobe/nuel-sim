@@ -1,13 +1,13 @@
 import random
 
 class Player:
-    def __init__(self, id, name, accuracy, x=0, y=0, strategy=None):
+    def __init__(self, id, name, accuracy, x=0, y=0, strategy=None, alive=True):
         self.id = id
         self.name = name
         self.accuracy = accuracy
         self.x = x
         self.y = y
-        self.alive = True
+        self.alive = alive
         self.strategy = strategy or self.default_strategy
 
     def default_strategy(self, me, players):
