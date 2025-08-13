@@ -6,7 +6,7 @@ from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePl
 from core.strategies import target_strongest, target_weakest, target_stronger, target_stronger_or_strongest, target_nearest, target_random
 
 
-GAME_PLAY = SequentialGamePlay()
+GAME_PLAY = SimultaneousGamePlay()
 HAS_GHOST = False
 
 # Game Settings
