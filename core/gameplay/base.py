@@ -7,8 +7,7 @@ class GamePlay(ABC):
     def choose_shooters(self, eligible_players):
         pass
 
-    def is_over(self, players):
-        alive_players = [player for player in players if player.alive]
+    def is_over(self, players, alive_players):
         return len(alive_players) <= 1
 
     def conduct_shots(self, shooters, players):

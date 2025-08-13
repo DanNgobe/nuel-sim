@@ -42,10 +42,9 @@ class EvenOddGruelGamePlay(GamePlay):
                     valid_targets.append(player)
 
         return valid_targets
-    
-    def is_over(self, players):
+
+    def is_over(self, players, alive_players):
         # check if only one player is alive or all alive players are of the same parity
-        alive_players = [player for player in players if player.alive]
         if len(alive_players) <= 1:
             return True
         # Check if all alive players are of the same parity

@@ -5,10 +5,12 @@ class PolicyNetwork(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_size),
+            nn.LayerNorm(hidden_size),  # Better than BatchNorm for RL
             nn.ReLU(),
-            # nn.Linear(hidden_size, hidden_size),
-            # nn.ReLU(),
-            nn.Linear(hidden_size, output_dim)
+            nn.Dropout(0.1),  # Prevent overfitting
+            nn.Linear(hidden_size, hidden_size // 2),
+            nn.ReLU(),
+            nn.Linear(hidden_size // 2, output_dim)
         )
 
     def forward(self, x):
