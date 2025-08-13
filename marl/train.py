@@ -7,6 +7,7 @@ import config
 import torch
 import random
 import argparse
+import os
 
 def main(episodes=2000):
     num_players = config.NUM_PLAYERS
@@ -52,8 +53,8 @@ def main(episodes=2000):
                         # Divide the winning bonus among all alive players
                         alive_players = [p for p in players if p.alive]
                         if shooter.alive and len(alive_players) > 0:
-                            reward += config.NUM_PLAYERS / len(alive_players)
-                            
+                            reward += config.NUM_PLAYERS / len(alive_players) # Abstention can be seen as a strategy when the reward structure favors it
+
                     next_obs = config.OBSERVATION_MODEL.create_observation(shooter, players)
                     targets = config.OBSERVATION_MODEL.get_targets(shooter, players)
                     action = targets.index(target)

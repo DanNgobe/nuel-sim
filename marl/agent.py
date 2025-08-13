@@ -63,6 +63,7 @@ class SharedAgent:
     def update_target_network(self):
         self.target_net.load_state_dict(self.policy_net.state_dict())
     
-    def decay_epsilon(self, episode):
-        self.epsilon = settings.EPSILON_END + (settings.EPSILON_START - settings.EPSILON_END) * \
-                   (settings.EPSILON_DECAY ** episode)
+    def decay_epsilon(self, episode, total_episodes=25000):
+        # Linear decay: gradually decrease epsilon from START to END over total_episodes
+        decay_rate = (settings.EPSILON_START - settings.EPSILON_END) / (total_episodes * 0.25)
+        self.epsilon = max(settings.EPSILON_END, settings.EPSILON_START - decay_rate * episode)

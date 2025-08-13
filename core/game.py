@@ -42,7 +42,7 @@ class Game:
         eligible_players = [p for p in alive_players if p.id not in self.already_shot]
         if not eligible_players:
             eligible_players = alive_players
-            self.already_shot.clear()
+            self.already_shot = set()
             self.round_number += 1
 
         # Phase 1: Choose shooters and conduct shots

@@ -6,14 +6,14 @@ from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePl
 from core.strategies import target_strongest, target_weakest, target_stronger, target_stronger_or_strongest, target_nearest, target_random
 
 
-GAME_PLAY = RandomGamePlay()
+GAME_PLAY = SequentialGamePlay()
 HAS_GHOST = False
 
 # Game Settings
-NUM_PLAYERS = 5
+NUM_PLAYERS = 3
 NUM_ROUNDS = None
 
-OBSERVATION_MODEL = ThreatLevelObservation(num_players=NUM_PLAYERS, has_ghost=HAS_GHOST)
+OBSERVATION_MODEL = ThreatLevelObservation(NUM_PLAYERS, has_ghost=HAS_GHOST)
 MODEL_PATH = f"marl/models/{NUM_PLAYERS}_{GAME_PLAY.__class__.__name__}_{OBSERVATION_MODEL.name}.pth"
 MARL_AGENT = create_agent(OBSERVATION_MODEL, model_path=MODEL_PATH, is_evaluation=True)
 DEFAULT_STRATEGY = agent_based_strategy(OBSERVATION_MODEL, MARL_AGENT, explore=False)
