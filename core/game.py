@@ -43,7 +43,9 @@ class Game:
         eligible_players = self.player_manager.get_eligible_players()
         if not eligible_players:
             self.round_number += 1
-
+            eligible_players = self.player_manager.get_alive_players()
+            self.player_manager.reset_already_shot()
+        
         # Phase 1: Choose shooters and conduct shots
         shooters = self.gameplay.choose_shooters(eligible_players)
         shots = self.gameplay.conduct_shots(shooters, self.players)

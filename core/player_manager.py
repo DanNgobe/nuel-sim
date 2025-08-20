@@ -9,9 +9,6 @@ class PlayerManager:
     def get_eligible_players(self):
         alive_players = self.get_alive_players()
         eligible_players = [p for p in alive_players if p.id not in self.already_shot]
-        if not eligible_players:
-            eligible_players = alive_players
-            self.reset_already_shot()
         return eligible_players
 
     def mark_shot(self, shooters):
