@@ -2,8 +2,8 @@
 import random
 import torch
 import torch.nn.functional as F
-from marl.network import PolicyNetwork
-import marl.settings as settings
+from ddqn_marl.network import PolicyNetwork
+import ddqn_marl.settings as settings
 
 class SharedAgent:
     def __init__(self, observation_dim, action_dim, model_path=None):
