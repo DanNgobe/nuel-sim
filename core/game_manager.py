@@ -28,6 +28,7 @@ class GameManager:
                  max_rounds: int = None,
                  marksmanship_range: Tuple[float, float] = (0.3, 0.9),
                  strategies: List[BaseStrategy] = None,
+                 assigned_accuracies: List[float] = None,
                  has_ghost: bool = False,
                  screen_width: int = 800,
                  screen_height: int = 600):
@@ -42,6 +43,7 @@ class GameManager:
         self.max_rounds = max_rounds
         self.marksmanship_range = marksmanship_range
         self.strategies = strategies or []
+        self.assigned_accuracies = assigned_accuracies or []
         self.has_ghost = has_ghost
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -50,7 +52,6 @@ class GameManager:
         self.current_game = None
         
         # For RL training
-        self.prev_observations = {}
         self.prev_alive_state = {}
         
         GameManager._initialized = True
@@ -73,6 +74,25 @@ class GameManager:
         center_x, center_y, radius = self.screen_width // 2, self.screen_height // 2, 200
         players = []
         
+        # Generate unique accuracies for all players
+        min_acc, max_acc = self.marksmanship_range
+        step = 0.1
+        available_accuracies = []
+        
+        # Create list of available accuracies in steps of 0.1
+        current = min_acc
+        while current <= max_acc:
+            available_accuracies.append(round(current, 1))
+            current += step
+        
+        # If we need more accuracies than available in range, extend the range
+        while len(available_accuracies) < self.num_players:
+            max_acc += step
+            available_accuracies.append(round(max_acc, 1))
+        
+        # Shuffle to randomize assignment
+        random.shuffle(available_accuracies)
+        
         # Create regular players
         for i in range(self.num_players):
             angle = 2 * math.pi * i / self.num_players
@@ -82,8 +102,11 @@ class GameManager:
             # Get strategy for this player
             strategy = self.strategies[i] if i < len(self.strategies) else TargetRandom()
             
-            # Generate accuracy
-            accuracy = random.uniform(*self.marksmanship_range)
+            # Use assigned accuracy if available, otherwise use unique accuracy from list
+            if i < len(self.assigned_accuracies):
+                accuracy = self.assigned_accuracies[i]
+            else:
+                accuracy = available_accuracies[i]
             
             players.append(Player(
                 id=i, 
@@ -91,7 +114,8 @@ class GameManager:
                 accuracy=accuracy, 
                 x=x, 
                 y=y, 
-                strategy=strategy
+                strategy=strategy,
+                observation_model=self.observation_model
             ))
         
         # Create ghost player if needed
@@ -102,7 +126,8 @@ class GameManager:
                 accuracy=-1,
                 x=center_x,
                 y=center_y,
-                alive=False
+                alive=False,
+                observation_model=self.observation_model
             ))
         
         return players
@@ -116,12 +141,6 @@ class GameManager:
             observation_model=self.observation_model,
             max_rounds=self.max_rounds
         )
-        
-        # Reset previous observations for RL
-        self.prev_observations = {
-            player.id: self.observation_model.create_observation(player, players) 
-            for player in players
-        }
         
         # Store initial alive state
         self.prev_alive_state = {
@@ -140,10 +159,6 @@ class GameManager:
         
         # Store previous observations for all players
         current_players = self.current_game.players
-        self.prev_observations = {
-            player.id: self.observation_model.create_observation(player, current_players) 
-            for player in current_players
-        }
         
         # Store previous alive state before the turn
         self.prev_alive_state = {
@@ -200,18 +215,18 @@ class GameManager:
             # Use previous alive state to check if target was alive before the shot
             target_was_alive = self.prev_alive_state.get(target.id, True)
             if not target_was_alive and target.name != "Ghost":
-                reward -= 1.0
+                reward -= 50
             
             # Survival bonus for alive players
             if shooter.alive:
-                reward += 0.1
+                reward += 1
             
             # Game over rewards
             if self.current_game.is_over():
                 alive_players = [p for p in self.current_game.players if p.alive]
                 if shooter.alive and len(alive_players) > 0:
                     # Divide winning bonus among alive players
-                    reward += self.num_players / len(alive_players)
+                    reward += 100 * self.num_players / len(alive_players)
             
             rewards[shooter.id] = reward
         
@@ -228,19 +243,9 @@ class GameManager:
             "history": self.current_game.history[-1] if self.current_game.history else []
         }
     
-    def get_prev_observations(self) -> Dict[str, Any]:
-        """Get previous observations for RL training"""
-        return self.prev_observations.copy()
-    
     def get_prev_alive_state(self) -> Dict[int, bool]:
         """Get previous alive state for RL training"""
         return self.prev_alive_state.copy()
-    
-    def get_targets_for_player(self, player: Player) -> List[Player]:
-        """Get valid targets for a specific player"""
-        if not self.current_game:
-            return []
-        return self.observation_model.get_targets(player, self.current_game.players)
     
     def run_episode(self) -> Dict:
         """Run a complete game episode"""

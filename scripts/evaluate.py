@@ -1,5 +1,5 @@
 import config as config
-from core.game import Game
+from core.game_manager import GameManager
 from core.player import Player
 import random
 import argparse
@@ -9,28 +9,42 @@ from collections import defaultdict
 import numpy as np
 
 def evaluate(num_episodes=100):
-    num_players = config.NUM_PLAYERS + (1 if config.HAS_GHOST else 0)
-    win_counts = {f"P{i}": 0 for i in range(num_players)}
-    win_counts_accuracy = {f"A{i}": 0 for i in range(num_players)}
+    # Reset GameManager to ensure clean state
+    GameManager.reset_instance()
     
-    survivor_counts = {f"S{i}": 0 for i in range(num_players)}
+    # Create GameManager with configuration
+    game_manager = GameManager(
+        num_players=config.NUM_PLAYERS,
+        gameplay=config.GAME_PLAY,
+        observation_model=config.OBSERVATION_MODEL,
+        max_rounds=config.NUM_ROUNDS,
+        marksmanship_range=config.MARKSMANSHIP_RANGE,
+        strategies=config.ASSIGNED_STRATEGIES,
+        assigned_accuracies=config.ASSIGNED_ACCURACIES,
+        has_ghost=config.HAS_GHOST
+    )
+    
+    # Initialize counters - will be updated after first game creation
+    win_counts = {}
+    win_counts_accuracy = {}
+    survivor_counts = {}
 
     # Stats: alive_count -> shooter_rank -> target_rank -> count
     round_stats = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
 
     for episode in range(num_episodes):
-        players = []
-        for i in range(config.NUM_PLAYERS):
-            accuracy = config.ASSIGNED_ACCURACIES[i] if i < len(config.ASSIGNED_ACCURACIES) else random.uniform(*config.MARKSMANSHIP_RANGE)
-            strategy = config.ASSIGNED_STRATEGIES[i] if i < len(config.ASSIGNED_STRATEGIES) else config.DEFAULT_STRATEGY
-            players.append(Player(id=i, name=f"P{i}", accuracy=accuracy, strategy=strategy))
-        if config.HAS_GHOST:
-            players.append(Player(id=config.NUM_PLAYERS, name="Ghost", accuracy=-1.0, alive=False))
-        if(len(players) != num_players):
-            raise ValueError(f"Number of players {len(players)} does not match expected {num_players}")
-
-        sorted_accuracy = sorted(players, key=lambda p: p.accuracy)
-        game = Game(players, gameplay=config.GAME_PLAY, observation_model=config.OBSERVATION_MODEL, max_rounds=config.NUM_ROUNDS)
+        # Create a new game for this episode
+        game = game_manager.reset_game()
+        players = game.players
+        
+        # Initialize win_counts with actual player names from the first game
+        if episode == 0:
+            win_counts = {player.name: 0 for player in players}
+            win_counts_accuracy = {f"A{i}": 0 for i in range(len(players))}
+            survivor_counts = {f"S{i}": 0 for i in range(len(players) + 1)}
+        
+        # Sort players by accuracy for ranking
+        sorted_accuracy = sorted(players, key=lambda p: p.accuracy if p.accuracy > 0 else 999)
 
         while not game.is_over():
             alive = game.get_alive_players()
@@ -54,6 +68,9 @@ def evaluate(num_episodes=100):
             win_counts_accuracy[f"A{player_index}"] += 1
 
         survivor_counts[f"S{len(alive_players)}"] += 1
+
+    # Get the number of players for matrix calculations
+    num_players = len(players)
 
     # Display survivor counts
     print("\n=== Survivor Counts ===")

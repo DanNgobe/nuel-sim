@@ -1,7 +1,7 @@
 # main.py
 import math
 from core.game_manager import GameManager
-from visual import run_game_visual
+from visual import run_game_visual, run_infinite_game_visual
 import config
 
 def print_detailed_episode_results(episode_data):
@@ -60,6 +60,7 @@ def main():
         max_rounds=config.NUM_ROUNDS,
         marksmanship_range=config.MARKSMANSHIP_RANGE,
         strategies=config.ASSIGNED_STRATEGIES,
+        assigned_accuracies=config.ASSIGNED_ACCURACIES,
         has_ghost=config.HAS_GHOST,
         screen_width=config.SCREEN_WIDTH,
         screen_height=config.SCREEN_HEIGHT
@@ -67,9 +68,8 @@ def main():
     
     if config.RUN_MODE == "visualize":
         print("Running visual simulation...")
-        game = game_manager.reset_game()
-        run_game_visual(game)
-    
+        run_infinite_game_visual(game_manager)
+
     else:  # single episode
         print("Running single episode...")
         result = game_manager.run_episode()

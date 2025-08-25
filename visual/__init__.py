@@ -1,1 +1,1 @@
-from .pygame_visual import run_game_visual
+from .pygame_visual import run_game_visual, run_infinite_game_visual

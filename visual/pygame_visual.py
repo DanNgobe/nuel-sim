@@ -85,3 +85,29 @@ def run_game_visual(game):
         draw_game(screen, game.players, game.history)
 
     pygame.quit()
+
+def run_infinite_game_visual(game_manager):
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption("Nuel Simulation")
+    clock = pygame.time.Clock()
+
+    while True:
+        game = game_manager.reset_game()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+            
+        while not game.is_over():
+            game.run_turn()
+            clock.tick(FPS)
+            draw_game(screen, game.players, game.history)
+
+        alive = game.get_alive_players()
+        if alive:
+            print(f"Winner: {alive[0].name}")
+        else:
+            print("No survivors.")
+        time.sleep(1)
+        
