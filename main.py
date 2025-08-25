@@ -1,30 +1,79 @@
+# main.py
 import math
-import random
-from core import Player
-from core import Game
+from core.game_manager import GameManager
 from visual import run_game_visual
 import config
 
-def create_players(n):
-    center_x, center_y, radius = config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2, 200
-    players = []
-
-    # Create players in a circular formation
-    for i in range(n):
-        angle = 2 * math.pi * i / n
-        x = center_x + radius * math.cos(angle)
-        y = center_y + radius * math.sin(angle)
-        accuracy = config.ASSIGNED_DEFAULT_ACCURACIES[i] if i < len(config.ASSIGNED_DEFAULT_ACCURACIES) else random.uniform(*config.MARKSMANSHIP_RANGE)
-        strategy = config.ASSIGNED_DEFAULT_STRATEGIES[i] if i < len(config.ASSIGNED_DEFAULT_STRATEGIES) else config.DEFAULT_STRATEGY
-        players.append(Player(id=i, name=f"P{i+1}", accuracy=accuracy, x=x, y=y, strategy=strategy))
+def print_detailed_episode_results(episode_data):
+    """Print detailed results of an episode with round-by-round breakdown"""
+    print("\n" + "="*60)
+    print("EPISODE SUMMARY")
+    print("="*60)
     
-    # Create a ghost player
-    if (config.HAS_GHOST):
-        players.append(Player(id=n, name="Ghost", accuracy=-1, x=center_x, y=center_y, alive=False))
+    if not episode_data:
+        print("No episode data available.")
+        return
+    
+    total_rounds = len(episode_data)
+    print(f"Total Rounds: {total_rounds}")
+    
+    for round_idx, (observations, rewards, done, info) in enumerate(episode_data, 1):
+        print(f"\n--- ROUND {round_idx} ---")
+        
+        # Print the shooting history for this round
+        if "history" in info and info["history"]:
+            print("Actions taken:")
+            for shooter, target, hit in info["history"]:
+                if shooter and target:
+                    hit_status = "HIT" if hit else "MISS"
+                    print(f"  P{shooter.id} → P{target.id}: {hit_status}")
+                else:
+                    print("  No valid action recorded")
+        else:
+            print("  No actions taken this round")
+        
+        # Print rewards for this round
+        if rewards:
+            print("Rewards earned:")
+            for player_id, reward in rewards.items():
+                if reward != 0:
+                    print(f"  Player {player_id}: {reward:+.1f}")
 
-    return players
+        # Print current game state
+        alive_count = info.get("alive_players", 0)
+        print(f"Players still alive: {alive_count}")
+        
+        if done:
+            print("🎯 GAME OVER!")
+            break
+    
+    print("\n" + "="*60)
+    print("EPISODE COMPLETE")
+    print("="*60)
+
+def main():
+    # Create game manager
+    game_manager = GameManager(
+        num_players=config.NUM_PLAYERS,
+        gameplay=config.GAME_PLAY,
+        observation_model=config.OBSERVATION_MODEL,
+        max_rounds=config.NUM_ROUNDS,
+        marksmanship_range=config.MARKSMANSHIP_RANGE,
+        strategies=config.ASSIGNED_STRATEGIES,
+        has_ghost=config.HAS_GHOST,
+        screen_width=config.SCREEN_WIDTH,
+        screen_height=config.SCREEN_HEIGHT
+    )
+    
+    if config.RUN_MODE == "visualize":
+        print("Running visual simulation...")
+        game = game_manager.reset_game()
+        run_game_visual(game)
+    
+    else:  # single episode
+        print("Running single episode...")
+        result = game_manager.run_episode()
+        print_detailed_episode_results(result)
 
 if __name__ == "__main__":
-    players = create_players(config.NUM_PLAYERS)
-    game = Game(players, gameplay=config.GAME_PLAY, observation_model=config.OBSERVATION_MODEL, max_rounds=config.NUM_ROUNDS)
-    run_game_visual(game)
+    main()

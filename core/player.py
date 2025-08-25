@@ -8,15 +8,15 @@ class Player:
         self.x = x
         self.y = y
         self.alive = alive
-        self.strategy = strategy or self.default_strategy
-
-    def default_strategy(self, me, players):
-        """Default target selection: random alive enemy."""
-        alive = [p for p in players if p != me and p.alive]
-        return random.choice(alive) if alive else None
+        
+        # Import strategy here to avoid circular import
+        if strategy is None:
+            from .strategies import TargetRandom
+            strategy = TargetRandom()
+        self.strategy = strategy
 
     def choose_target(self, players):
-        return self.strategy(self, players)
+        return self.strategy.choose_target(self, players)
 
     def shoot(self, target):
         if not self.alive or not target:
