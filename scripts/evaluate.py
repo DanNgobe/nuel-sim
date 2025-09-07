@@ -9,9 +9,6 @@ from collections import defaultdict
 import numpy as np
 
 def evaluate(num_episodes=100):
-    # Reset GameManager to ensure clean state
-    GameManager.reset_instance()
-    
     # Create GameManager with configuration
     game_manager = GameManager(
         num_players=config.NUM_PLAYERS,
@@ -50,7 +47,7 @@ def evaluate(num_episodes=100):
             alive = game.get_alive_players()
             alive_count = len(alive)
 
-            game.run_turn()
+            game.run_auto_turn()
             last_round = game.history[-1]
             for shooter, target, hit in last_round:
                 if shooter and target:

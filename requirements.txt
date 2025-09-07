@@ -25,3 +25,5 @@ sympy
 torch
 typing_extensions
 tzdata
+ray[rllib]
+gymnasium

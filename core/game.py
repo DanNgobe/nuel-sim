@@ -1,10 +1,17 @@
 from core.player_manager import PlayerManager
-from .observation import NullObservationModel
-from .gameplay import GamePlay
-from .player import Player
+from core.observation import NullObservationModel
+from core.gameplay import GamePlay
+from core.player import Player
+from typing import List, Optional, Tuple, Dict, Any
 
 class Game:
-    def __init__(self, players: list[Player], gameplay: GamePlay, observation_model=NullObservationModel(), max_rounds=None):
+    def __init__(
+        self, 
+        players: List[Player], 
+        gameplay: GamePlay, 
+        observation_model: Optional[Any] = NullObservationModel(), 
+        max_rounds: Optional[int] = None
+    ):
         self.players = players
         self.gameplay = gameplay
         self.observation_model = observation_model
@@ -21,37 +28,88 @@ class Game:
 
         # Player Management
         self.player_manager = PlayerManager(players)
+        
+        # Current turn state
+        self.current_shooters = []
 
     @property
-    def rounds_remaining(self):
+    def rounds_remaining(self) -> Optional[int]:
+        """Get the number of rounds remaining"""
         if self.max_rounds is None:
             return None
         return self.max_rounds - self.round_number
 
-    def get_alive_players(self):
+    def get_alive_players(self) -> List[Player]:
+        """Get all alive players"""
         return self.player_manager.get_alive_players()
     
-    def is_over(self):
+    def is_over(self) -> bool:
+        """Check if the game is over"""
         game_over = self.gameplay.is_over(self.players, self.get_alive_players())
         rounds_exceeded = self.rounds_remaining is not None and self.rounds_remaining <= 0
+        
         if game_over or rounds_exceeded:
             self.observation_model.reset()
+            
         return game_over or rounds_exceeded
 
-    def run_turn(self):
-        # Prepare eligible shooters
+    def prepare_turn(self) -> List[Player]:
+        """Prepare for a new turn and return eligible players"""
         eligible_players = self.player_manager.get_eligible_players()
         if not eligible_players:
             self.round_number += 1
             eligible_players = self.player_manager.get_alive_players()
             self.player_manager.reset_already_shot()
         
-        # Phase 1: Choose shooters and conduct shots
+        # Get eligible players for this turn
         shooters = self.gameplay.choose_shooters(eligible_players)
-        shots = self.gameplay.conduct_shots(shooters, self.players)
-        self.gameplay.process_shots(shots)
+        self.current_shooters = shooters
+        return self.current_shooters
 
-        # Phase 2: Update observation model and history
+    def execute_turn(self, actions: Dict[int, int]) -> List[Tuple[Player, Optional[Player], bool]]:
+        """
+        Execute a turn with provided actions
+        
+        Args:
+            actions: Dictionary mapping player_id to target_id 
+            
+        Returns:
+            List of shot results (shooter, target, hit)
+        """
+        shooters = []
+        shots = []
+        
+        # Process each action
+        for player_id, target_id in actions.items():
+            # Find shooter and target
+            shooter = next(p for p in self.players if p.id == player_id)
+            target = next(p for p in self.players if p.id == target_id)
+
+            # Validate and execute shot
+            if shooter and shooter.alive and shooter in self.current_shooters:
+                hit = shooter.shoot(target)
+                shots.append((shooter, target, hit))
+                shooters.append(shooter)
+        
+        # Process the shots
+        self.gameplay.process_shots(shots)
+        
+        # Update game state
         self.history.append(shots)
         self.player_manager.mark_shot(shooters)
         self.observation_model.update(shots, self.rounds_remaining)
+        
+        return shots
+
+    def run_auto_turn(self) -> List[Tuple[Player, Optional[Player], bool]]:
+        """Run a turn using players' default strategies"""
+        eligible_players = self.prepare_turn()
+        
+        # Get actions from player strategies
+        actions = {}
+        for player in eligible_players:
+            target = player.choose_target(self.players)
+            actions[player.id] = target.id if target else None
+        
+        # Execute the turn
+        return self.execute_turn(actions)

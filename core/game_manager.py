@@ -1,77 +1,83 @@
-# core/game_manager.py
 import math
 import random
-from typing import List, Dict, Any, Tuple, Optional
-from .game import Game
-from .player import Player
-from .gameplay import GamePlay
-from .observation.observation_model import ObservationModel
-from .strategies import BaseStrategy, TargetRandom
+from typing import List, Dict, Any, Tuple, Optional, Set
+import gymnasium as gym
+import numpy as np
+from core.game import Game
+from core.player import Player
+from core.gameplay import GamePlay
+from core.observation.observation_model import ObservationModel, NullObservationModel
+from core.strategies import BaseStrategy, TargetRandom
+from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
-class GameManager:
-    """
-    Manages multiple game instances and serves as a training environment
-    Singleton pattern implementation
-    """
-    _instance = None
-    _initialized = False
-    
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super(GameManager, cls).__new__(cls)
-        return cls._instance
+from visual.pygame_visual import run_infinite_game_visual
+
+class GameManager(MultiAgentEnv):
+    """Multi-agent environment wrapper for the shooting game."""
     
     def __init__(self, 
                  num_players: int = 3,
                  gameplay: GamePlay = None,
-                 observation_model: ObservationModel = None,
-                 max_rounds: int = None,
+                 observation_model: Optional[ObservationModel] = None,
+                 max_rounds: Optional[int] = None,
                  marksmanship_range: Tuple[float, float] = (0.3, 0.9),
-                 strategies: List[BaseStrategy] = None,
-                 assigned_accuracies: List[float] = None,
+                 strategies: Optional[List[BaseStrategy]] = None,
+                 assigned_accuracies: Optional[List[float]] = None,
                  has_ghost: bool = False,
                  screen_width: int = 800,
                  screen_height: int = 600):
         
-        # Only initialize once
-        if GameManager._initialized:
-            return
-            
+        super().__init__()
+        
+        # Game parameters
         self.num_players = num_players
         self.gameplay = gameplay
-        self.observation_model = observation_model
+        self.observation_model = observation_model or NullObservationModel()
         self.max_rounds = max_rounds
         self.marksmanship_range = marksmanship_range
-        self.strategies = strategies or []
-        self.assigned_accuracies = assigned_accuracies or []
         self.has_ghost = has_ghost
         self.screen_width = screen_width
         self.screen_height = screen_height
+        self.assigned_accuracies = assigned_accuracies or []
         
-        # Game state
+        # Initialize strategies
+        if strategies is None:
+            self.strategies = [TargetRandom() for _ in range(num_players)]
+        else:
+            self.strategies = strategies
+            # If fewer strategies than players, fill with TargetRandom
+            while len(self.strategies) < num_players:
+                self.strategies.append(TargetRandom())
+                    
+        # Agent IDs
+        self.agents = [i for i in range(num_players)]
+        self.possible_agents = self.agents.copy()
+        
+        # Initialize observation and action spaces
+        obs_dim = self.observation_model.get_observation_dim()
+        action_dim = self.observation_model.get_action_dim()
+        
+        self.observation_spaces = {
+            agent_id: gym.spaces.Box(
+                low=0.0, high=1.0, shape=(obs_dim,), dtype=np.float32
+            )
+            for agent_id in self.agents
+        }
+        
+        self.action_spaces = {
+            agent_id: gym.spaces.Discrete(action_dim)
+            for agent_id in self.agents
+        }
+        
+        # Initialize game state
         self.current_game = None
-        
-        # For RL training
         self.prev_alive_state = {}
-        
-        GameManager._initialized = True
-    
-    @classmethod
-    def get_instance(cls):
-        """Get the singleton instance"""
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
-    
-    @classmethod
-    def reset_instance(cls):
-        """Reset the singleton instance (useful for testing)"""
-        cls._instance = None
-        cls._initialized = False
-    
-    def create_players(self) -> List[Player]:
+        self.reset_game()
+
+    def _create_players(self) -> List[Player]:
         """Create players with positions in a circular formation"""
-        center_x, center_y, radius = self.screen_width // 2, self.screen_height // 2, 200
+        center_x, center_y = self.screen_width // 2, self.screen_height // 2
+        radius = min(center_x, center_y) - 50 
         players = []
         
         # Generate unique accuracies for all players
@@ -133,8 +139,8 @@ class GameManager:
         return players
     
     def reset_game(self) -> Game:
-        """Create a new game instance"""
-        players = self.create_players()
+        """Create a new game instance."""
+        players = self._create_players()
         self.current_game = Game(
             players=players,
             gameplay=self.gameplay,
@@ -147,110 +153,115 @@ class GameManager:
             player.id: player.alive for player in players
         }
         
+        # Prepare first turn
+        self.current_game.prepare_turn()
+        
         return self.current_game
-    
-    def step(self) -> Tuple[Dict, Dict, bool, Dict]:
-        """
-        Advance the game by one turn
-        Returns: observations, rewards, done, info
-        """
-        if self.current_game is None:
-            self.reset_game()
-        
-        # Store previous observations for all players
-        current_players = self.current_game.players
-        
-        # Store previous alive state before the turn
-        self.prev_alive_state = {
-            player.id: player.alive for player in current_players
-        }
-        
-        # If game is over, reset
-        if self.current_game.is_over():
-            rewards = self._calculate_rewards()
-            self.reset_game()
-            return self._get_observations(), rewards, True, self._get_info()
-        
-        # Run a turn
-        self.current_game.run_turn()
-        
-        # Get game state information
-        observations = self._get_observations()
-        rewards = self._calculate_rewards()
-        done = self.current_game.is_over()
-        info = self._get_info()
-        
-        return observations, rewards, done, info
-    
-    def _get_observations(self) -> Dict[str, Any]:
-        """Get current observations for all players for RL training"""
-        if not self.current_game or not self.observation_model:
-            return {}
-        
-        observations = {}
-        for player in self.current_game.players:
-            if player.alive:
-                observations[player.id] = self.observation_model.create_observation(
-                    player, self.current_game.players
-                )
-        return observations
-    
-    def _calculate_rewards(self) -> Dict[str, float]:
-        """Calculate rewards for all players based on the last turn"""
+
+    def _calculate_rewards(self, shots: List[Tuple[Player, Player, bool]], game_over: bool) -> Dict[int, float]:
+        """Calculate rewards for each player based on the shots taken."""
         rewards = {player.id: 0.0 for player in self.current_game.players}
+        for shooter, target, hit in shots:
+            if shooter.alive: # Survival reward
+                rewards[shooter.id] += 1.0
+
+            # Negative reward for shooting dead players (except ghosts)
+            if target and not self.prev_alive_state.get(target.id, True) and target.name != "Ghost":
+                rewards[shooter.id] -= 10.0
         
-        if not self.current_game or not self.current_game.history:
-            return rewards
-        
-        # Get the last turn's history
-        last_history = self.current_game.history[-1]
-        
-        for shooter, target, hit in last_history:
-            if not shooter or not target:
-                continue
-                
-            reward = 0.0
-            
-            # Penalty for shooting players that were already dead (except ghost)
-            # Use previous alive state to check if target was alive before the shot
-            target_was_alive = self.prev_alive_state.get(target.id, True)
-            if not target_was_alive and target.name != "Ghost":
-                reward -= 50
-            
-            # Survival bonus for alive players
-            if shooter.alive:
-                reward += 1
-            
-            # Game over rewards
-            if self.current_game.is_over():
-                alive_players = [p for p in self.current_game.players if p.alive]
+            if game_over:
+                alive_players = self.current_game.get_alive_players()
                 if shooter.alive and len(alive_players) > 0:
-                    # Divide winning bonus among alive players
-                    reward += 100 * self.num_players / len(alive_players)
-            
-            rewards[shooter.id] = reward
+                    rewards[shooter.id] += 100 / len(alive_players)
         
         return rewards
-    
-    def _get_info(self) -> Dict:
-        """Get additional info about the game state"""
-        if not self.current_game:
-            return {}
+
+    def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None) -> Tuple[Dict, Dict]:
+        """Reset the environment and return initial observations."""
+        super().reset(seed=seed, options=options)
         
-        return {
-            "round": self.current_game.round_number,
-            "alive_players": len(self.current_game.get_alive_players()),
-            "history": self.current_game.history[-1] if self.current_game.history else []
-        }
-    
-    def get_prev_alive_state(self) -> Dict[int, bool]:
-        """Get previous alive state for RL training"""
-        return self.prev_alive_state.copy()
-    
-    def run_episode(self) -> Dict:
-        """Run a complete game episode"""
+        # Reset the game
         self.reset_game()
-        info = []
-        while not self.current_game.is_over():
-            info.append(self.step())
-        return info
+        
+        # Get initial observations
+        observations = {}
+        infos = {}
+        
+        for player in self.current_game.players:
+            agent_id = player.id
+            obs = self.observation_model.create_observation(player, self.current_game.players)
+            observations[agent_id] = np.array(obs, dtype=np.float32)
+            infos[agent_id] = {
+                "accuracy": player.accuracy,
+                "alive": player.alive
+            }
+        
+        # Update previous alive state
+        self.prev_alive_state = {
+            player.id: player.alive for player in self.current_game.players
+        }
+        
+        return observations, infos
+
+    def step(self, action_dict: Dict[int, int]) -> Tuple[Dict, Dict, Dict, Dict, Dict]:
+        """Execute one environment step with the given actions."""
+        shots = self.current_game.execute_turn(action_dict)
+        self.current_game.prepare_turn()
+        
+        # Get observations, rewards, and done flags
+        observations = {}
+        rewards = {}
+        terminateds = {}
+        truncateds = {}
+        infos = {}
+        
+        game_over = self.current_game.is_over()
+        rewards = self._calculate_rewards(shots, game_over)
+        
+        for player in self.current_game.players:
+            agent_id = player.id
+            
+            # Observation
+            obs = self.observation_model.create_observation(player, self.current_game.players)
+            observations[agent_id] = np.array(obs, dtype=np.float32)
+            
+            # Reward calculation
+            rewards[agent_id] = rewards.get(agent_id, 0.0)
+            
+            # Termination and truncation
+            terminateds[agent_id] = not player.alive
+            truncateds[agent_id] = False
+            
+            # Info
+            infos[agent_id] = {
+                "accuracy": player.accuracy,
+                "alive": player.alive
+            }
+        
+        # Global termination condition
+        terminateds["__all__"] = game_over
+        truncateds["__all__"] = False
+        
+        # Update previous alive state for next step
+        self.prev_alive_state = {
+            player.id: player.alive for player in self.current_game.players
+        }
+        
+        return observations, rewards, terminateds, truncateds, infos
+
+    def get_observation_space(self, agent_id: str) -> gym.Space:
+        """Get observation space for a specific agent."""
+        return self.observation_spaces[agent_id]
+
+    def get_action_space(self, agent_id: str) -> gym.Space:
+        """Get action space for a specific agent."""
+        return self.action_spaces[agent_id]
+
+    def render(self) -> None:
+        """Render the environment."""
+        run_infinite_game_visual(self)
+
+    def close(self) -> None:
+        """Clean up resources."""
+        self.current_game = None
+        self.prev_alive_state = {}

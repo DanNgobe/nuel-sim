@@ -1,30 +1,45 @@
 # settings.py
-from core.observation import ThreatLevelObservation, BayesianObservationModel, TurnAwareThreatObservation
-from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePlay, CounterAttackRandomGamePlay, EvenOddGruelGamePlay
+from core.observation import ThreatLevelObservation, BayesianObservationModel, TurnAwareThreatObservation, SimpleObservation
+from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePlay
 from core.strategies import TargetStrongest, TargetWeaker, TargetStronger, TargetRandom, TargetNearest
+from dqn_marl.settings import get_model_path
+from dqn_marl.strategy import DQNStrategy
 
 # Game Settings
 NUM_PLAYERS = 3
 NUM_ROUNDS = None
-RUN_MODE = "single"  # "visualize", or "single"
+RUN_MODE = "visualize"  # "visualize", or "single"
 
 # Gameplay
 GAME_PLAY = SimultaneousGamePlay()
 HAS_GHOST = False
 
 # Observation Model
-OBSERVATION_MODEL = ThreatLevelObservation(NUM_PLAYERS, has_ghost=HAS_GHOST)
+OBSERVATION_MODEL = SimpleObservation(NUM_PLAYERS, has_ghost=HAS_GHOST)
 MODEL_PATH = f"marl/models/{NUM_PLAYERS}_{GAME_PLAY.__class__.__name__}_{OBSERVATION_MODEL.name}.pth"
 
 # Player Settings
 MARKSMANSHIP_RANGE = (0.3, 0.9)
 
-TargetStrongestStrategy = TargetStrongest()
+target_strongest_strategy = TargetStrongest()
+model_path = get_model_path(
+        NUM_PLAYERS, 
+        GAME_PLAY.__class__.__name__, 
+        OBSERVATION_MODEL.name
+)
+    
+# Create DQN strategy
+dqn_strategy = DQNStrategy(
+    OBSERVATION_MODEL,
+    model_path=model_path,
+    explore=False
+)
+
 # Strategies (now using class instances)
 ASSIGNED_STRATEGIES = [
-    TargetStrongestStrategy,
-    TargetStrongestStrategy,
-    TargetStrongestStrategy
+    dqn_strategy,
+    dqn_strategy,
+    dqn_strategy
 ]
 
 ASSIGNED_ACCURACIES = []

@@ -100,7 +100,7 @@ def run_infinite_game_visual(game_manager):
                 return
             
         while not game.is_over():
-            game.run_turn()
+            game.run_auto_turn()
             clock.tick(FPS)
             draw_game(screen, game.players, game.history)
 

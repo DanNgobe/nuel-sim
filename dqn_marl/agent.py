@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 from dqn_marl.network import PolicyNetwork
 import dqn_marl.settings as settings
+import numpy as np
 
 class SharedAgent:
     def __init__(self, observation_dim, action_dim, model_path=None):
@@ -34,10 +35,10 @@ class SharedAgent:
 
         states, actions, rewards, next_states, dones = replay_buffer.sample(settings.BATCH_SIZE)
 
-        states = torch.tensor(states, dtype=torch.float32, device=settings.DEVICE)
+        states = torch.tensor(np.array(states), dtype=torch.float32, device=settings.DEVICE)
         actions = torch.tensor(actions, dtype=torch.long, device=settings.DEVICE)
         rewards = torch.tensor(rewards, dtype=torch.float32, device=settings.DEVICE)
-        next_states = torch.tensor(next_states, dtype=torch.float32, device=settings.DEVICE)
+        next_states = torch.tensor(np.array(next_states), dtype=torch.float32, device=settings.DEVICE)
         dones = torch.tensor(dones, dtype=torch.float32, device=settings.DEVICE)
 
         # Current Q-values
