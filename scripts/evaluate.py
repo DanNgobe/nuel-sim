@@ -1,4 +1,9 @@
-import config as config
+# Import warning suppression first
+import suppress_warnings
+suppress_warnings.suppress_ray_warnings()
+
+import config.settings as config
+from config.factories import create_game_objects
 from core.game_manager import GameManager
 from core.player import Player
 import random
@@ -9,14 +14,17 @@ from collections import defaultdict
 import numpy as np
 
 def evaluate(num_episodes=100):
+    # Create game objects using factories to avoid circular imports
+    game_objects = create_game_objects()
+    
     # Create GameManager with configuration
     game_manager = GameManager(
         num_players=config.NUM_PLAYERS,
-        gameplay=config.GAME_PLAY,
-        observation_model=config.OBSERVATION_MODEL,
+        gameplay=game_objects['gameplay'],
+        observation_model=game_objects['observation_model'],
         max_rounds=config.NUM_ROUNDS,
         marksmanship_range=config.MARKSMANSHIP_RANGE,
-        strategies=config.ASSIGNED_STRATEGIES,
+        strategies=game_objects['strategies'],
         assigned_accuracies=config.ASSIGNED_ACCURACIES,
         has_ghost=config.HAS_GHOST
     )

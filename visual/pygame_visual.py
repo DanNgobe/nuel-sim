@@ -1,11 +1,7 @@
 import pygame
 import time
 import math
-from config import (
-    SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_RADIUS, FPS, ARROW_SIZE,
-    COLOR_BACKGROUND, COLOR_PLAYER_ALIVE, COLOR_PLAYER_DEAD,
-    COLOR_HIT, COLOR_MISS
-)
+import config.settings as config
 
 def draw_arrow(screen, start_pos, end_pos, color):
     """Draws an arrow from start_pos to end_pos."""
@@ -16,8 +12,8 @@ def draw_arrow(screen, start_pos, end_pos, color):
 
     # Arrowhead points (triangle)
     arrowhead = [
-        (end_pos[0] - ARROW_SIZE * math.cos(angle - math.pi / 6), end_pos[1] - ARROW_SIZE * math.sin(angle - math.pi / 6)),
-        (end_pos[0] - ARROW_SIZE * math.cos(angle + math.pi / 6), end_pos[1] - ARROW_SIZE * math.sin(angle + math.pi / 6)),
+        (end_pos[0] - config.ARROW_SIZE * math.cos(angle - math.pi / 6), end_pos[1] - config.ARROW_SIZE * math.sin(angle - math.pi / 6)),
+        (end_pos[0] - config.ARROW_SIZE * math.cos(angle + math.pi / 6), end_pos[1] - config.ARROW_SIZE * math.sin(angle + math.pi / 6)),
         end_pos
     ]
     
@@ -25,18 +21,18 @@ def draw_arrow(screen, start_pos, end_pos, color):
     pygame.draw.polygon(screen, color, arrowhead)
 
 def draw_game(screen, players, history):
-    screen.fill(COLOR_BACKGROUND)
+    screen.fill(config.COLOR_BACKGROUND)
 
     # Draw players
     for p in players:
-        color = COLOR_PLAYER_ALIVE if p.alive else COLOR_PLAYER_DEAD
-        pygame.draw.circle(screen, color, (int(p.x), int(p.y)), PLAYER_RADIUS)
+        color = config.COLOR_PLAYER_ALIVE if p.alive else config.COLOR_PLAYER_DEAD
+        pygame.draw.circle(screen, color, (int(p.x), int(p.y)), config.PLAYER_RADIUS)
 
         font = pygame.font.SysFont(None, 24)
 
         # Render player name above the circle
         name_label = font.render(p.name, True, (255, 255, 255))
-        screen.blit(name_label, (p.x - PLAYER_RADIUS, p.y - PLAYER_RADIUS - 20))
+        screen.blit(name_label, (p.x - config.PLAYER_RADIUS, p.y - config.PLAYER_RADIUS - 20))
 
         # Render marksmanship inside the circle (centered)
         accuracy_text = f"{int(p.accuracy * 100)}%"
@@ -51,13 +47,13 @@ def draw_game(screen, players, history):
             # Draw arrow between shooter and target
             if shooter and target:
                 # Draw arrow between shooter and target
-                line_color = COLOR_HIT if hit else COLOR_MISS
+                line_color = config.COLOR_HIT if hit else config.COLOR_MISS
                 draw_arrow(screen, (shooter.x, shooter.y), (target.x, target.y), line_color)
     pygame.display.flip()
 
 def run_game_visual(game):
     pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
     pygame.display.set_caption("Nuel Simulation")
     clock = pygame.time.Clock()
 
@@ -65,7 +61,7 @@ def run_game_visual(game):
 
     running = True
     while running:
-        clock.tick(FPS)
+        clock.tick(config.FPS)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -88,7 +84,7 @@ def run_game_visual(game):
 
 def run_infinite_game_visual(game_manager):
     pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
     pygame.display.set_caption("Nuel Simulation")
     clock = pygame.time.Clock()
 
@@ -101,7 +97,7 @@ def run_infinite_game_visual(game_manager):
             
         while not game.is_over():
             game.run_auto_turn()
-            clock.tick(FPS)
+            clock.tick(config.FPS)
             draw_game(screen, game.players, game.history)
 
         alive = game.get_alive_players()

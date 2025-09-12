@@ -1,8 +1,13 @@
 # main.py
+# Import warning suppression first
+import suppress_warnings
+suppress_warnings.suppress_ray_warnings()
+
 import math
 from core.game_manager import GameManager
 from visual import run_game_visual, run_infinite_game_visual
-import config
+import config.settings as config
+from config.factories import create_game_objects
 
 def print_detailed_episode_results(episode_data):
     """Print detailed results of an episode with round-by-round breakdown"""
@@ -52,14 +57,17 @@ def print_detailed_episode_results(episode_data):
     print("="*60)
 
 def main():
+    # Create game objects using factories to avoid circular imports
+    game_objects = create_game_objects()
+    
     # Create game manager
     game_manager = GameManager(
         num_players=config.NUM_PLAYERS,
-        gameplay=config.GAME_PLAY,
-        observation_model=config.OBSERVATION_MODEL,
+        gameplay=game_objects['gameplay'],
+        observation_model=game_objects['observation_model'],
         max_rounds=config.NUM_ROUNDS,
         marksmanship_range=config.MARKSMANSHIP_RANGE,
-        strategies=config.ASSIGNED_STRATEGIES,
+        strategies=game_objects['strategies'],
         assigned_accuracies=config.ASSIGNED_ACCURACIES,
         has_ghost=config.HAS_GHOST,
         screen_width=config.SCREEN_WIDTH,

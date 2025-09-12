@@ -1,48 +1,37 @@
 # settings.py
-from core.observation import ThreatLevelObservation, BayesianObservationModel, TurnAwareThreatObservation, SimpleObservation
-from core.gameplay import SequentialGamePlay, RandomGamePlay, SimultaneousGamePlay
-from core.strategies import TargetStrongest, TargetWeaker, TargetStronger, TargetRandom, TargetNearest
-from dqn_marl.settings import get_model_path
-from dqn_marl.strategy import DQNStrategy
+# Configuration with NO imports from core modules to prevent circular dependencies
+# Use string identifiers that will be resolved by factories at runtime
 
 # Game Settings
 NUM_PLAYERS = 3
 NUM_ROUNDS = None
 RUN_MODE = "visualize"  # "visualize", or "single"
 
-# Gameplay
-GAME_PLAY = SimultaneousGamePlay()
+# Gameplay Configuration
+# Available options: "SequentialGamePlay", "RandomGamePlay", "SimultaneousGamePlay"
+GAME_PLAY_TYPE = "SimultaneousGamePlay"
 HAS_GHOST = False
 
-# Observation Model
-OBSERVATION_MODEL = SimpleObservation(NUM_PLAYERS, has_ghost=HAS_GHOST)
-MODEL_PATH = f"marl/models/{NUM_PLAYERS}_{GAME_PLAY.__class__.__name__}_{OBSERVATION_MODEL.name}.pth"
+# Observation Model Configuration
+# Available options: "ThreatLevelObservation", "BayesianObservationModel", "TurnAwareThreatObservation", "SimpleObservation"
+OBSERVATION_MODEL_TYPE = "ThreatLevelObservation"
+OBSERVATION_MODEL_PARAMS = {
+    "num_players": NUM_PLAYERS,
+    "has_ghost": HAS_GHOST
+}
 
 # Player Settings
 MARKSMANSHIP_RANGE = (0.3, 0.9)
 
-target_strongest_strategy = TargetStrongest()
-model_path = get_model_path(
-        NUM_PLAYERS, 
-        GAME_PLAY.__class__.__name__, 
-        OBSERVATION_MODEL.name
-)
-    
-# Create DQN strategy
-dqn_strategy = DQNStrategy(
-    OBSERVATION_MODEL,
-    model_path=model_path,
-    explore=False
-)
-
-# Strategies (now using class instances)
-ASSIGNED_STRATEGIES = [
-    dqn_strategy,
-    dqn_strategy,
-    dqn_strategy
-]
-
+# Strategy Configuration (string identifiers)
+# Available options: "TargetStrongest", "TargetWeaker", "TargetStronger", "TargetRandom", "TargetNearest", "RLlibStrategy", "DQNStrategy"
+ASSIGNED_STRATEGY_TYPES = ["DQNStrategy","DQNStrategy","DQNStrategy"]
 ASSIGNED_ACCURACIES = []
+
+# RLlib Strategy Configuration
+import os
+_ALGORITHM = "ppo"  # "ppo" or "dqn"
+RLLIB_CHECKPOINT_PATH = os.path.abspath(f"rllib_marl/checkpoints/{_ALGORITHM}/{NUM_PLAYERS}_players/{GAME_PLAY_TYPE}_{OBSERVATION_MODEL_TYPE}")
 
 # Pygame Visual Settings
 SCREEN_WIDTH = 800

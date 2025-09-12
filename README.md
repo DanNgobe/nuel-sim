@@ -1,6 +1,6 @@
 # Nuel Simulation Game 🎯
 
-A comprehensive Python-based simulation framework for **N-player standoffs** (Duels, Truels, Nuels, and Gruels) with real-time **Pygame** visualization and advanced analytics. This extensible framework enables researchers, game theorists, and enthusiasts to explore strategic interactions in multi-player elimination games.
+A comprehensive Python-based simulation framework for **N-player standoffs** (Duels, Truels, Nuels, and Gruels) with real-time **Pygame** visualization, advanced analytics, and **Multi-Agent Reinforcement Learning (MARL)** capabilities. This extensible framework enables researchers, game theorists, and AI enthusiasts to explore strategic interactions in multi-player elimination games using both classical strategies and cutting-edge machine learning approaches.
 
 ## 🌟 Key Features
 
@@ -10,11 +10,19 @@ A comprehensive Python-based simulation framework for **N-player standoffs** (Du
 - **Strategic AI**: Multiple targeting strategies (strongest, weakest, nearest, random, etc.)
 - **Accuracy Modeling**: Realistic marksmanship simulation with customizable accuracy ranges
 
+### 🤖 Machine Learning Integration
+- **Deep Q-Network (DQN) MARL**: Train intelligent agents using deep reinforcement learning
+- **Ray RLlib Support**: Scalable multi-agent reinforcement learning with Ray framework
+- **Custom Neural Networks**: Configurable network architectures for different learning scenarios
+- **Experience Replay**: Advanced replay buffer implementation for stable learning
+- **Training Visualization**: Real-time training metrics and performance plots
+
 ### 📊 Advanced Analytics
 - **Bayesian Observation Models**: Dynamic belief updating based on observed player performance
 - **Statistical Evaluation**: Win rate analysis, survivor distribution, and strategic effectiveness metrics
 - **Data Visualization**: Comprehensive charts and heatmaps for strategy analysis
 - **Export Capabilities**: Save simulation results for external analysis
+- **Training Metrics**: Learning curves, reward tracking, and agent performance analysis
 
 ### 🎨 Visual Interface
 - **Real-time Visualization**: Live Pygame rendering with player positions and shot trajectories
@@ -25,11 +33,13 @@ A comprehensive Python-based simulation framework for **N-player standoffs** (Du
 - **Modular Design**: Easy to add new strategies, game modes, and observation models
 - **Plugin System**: Extensible framework for custom gameplay mechanics
 - **Configuration Management**: Centralized settings for easy experimentation
+- **MARL Framework**: Pluggable multi-agent learning algorithms
 
 ## 📋 Table of Contents
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Machine Learning Training](#machine-learning-training)
 - [Game Modes](#game-modes)
 - [Player Strategies](#player-strategies)
 - [Observation Models](#observation-models)
@@ -43,8 +53,9 @@ A comprehensive Python-based simulation framework for **N-player standoffs** (Du
 ## 🚀 Installation
 
 ### Prerequisites
-- Python 3.8 or higher
+- Python 3.8 or higher (3.11+ recommended for ML features)
 - pip package manager
+- At least 4GB RAM (8GB+ recommended for large-scale training)
 
 ### 1. Clone the Repository
 ```bash
@@ -52,12 +63,14 @@ git clone https://github.com/DanNgobe/nuel-sim.git
 cd nuel-sim
 ```
 
-### 2. Create Virtual Environment
+### 2. Create Virtual Environment (Recommended)
+
+**⚠️ Important**: A virtual environment is **strongly recommended** due to the complex dependencies (PyTorch, Ray, etc.)
 
 #### Windows (PowerShell):
 ```powershell
 python -m venv venv
-venv\Scripts\Activate.ps1
+.\venv\Scripts\Activate.ps1
 ```
 
 #### Windows (Command Prompt):
@@ -77,10 +90,30 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+**Note**: The installation includes heavy ML dependencies (PyTorch ~2GB, Ray RLlib, etc.). This may take several minutes.
+
 ### 4. Verify Installation
+
+#### Basic Simulation:
 ```bash
 python main.py
 ```
+
+#### ML Training (requires virtual environment):
+```bash
+# DQN training
+python -m dqn_marl.train --episodes 1000 --plot
+
+# Ray RLlib training
+python -m rllib_marl.train
+```
+
+### Troubleshooting Installation
+
+If you encounter import errors like `ModuleNotFoundError: No module named 'ray'`:
+1. Ensure your virtual environment is activated
+2. Run commands as modules: `python -m dqn_marl.train` instead of `python dqn_marl/train.py`
+3. Verify all dependencies: `pip list | grep -E "(torch|ray|numpy)"`
 
 ## ⚡ Quick Start
 
@@ -114,6 +147,103 @@ python scripts/evaluate.py --episodes 1000
 # Run with custom configuration
 python main.py  # Edit config/settings.py first
 ```
+
+## 🤖 Machine Learning Training
+
+### DQN Multi-Agent Training
+
+Train intelligent agents using Deep Q-Networks:
+
+```bash
+# Basic training (2000 episodes)
+python -m dqn_marl.train
+
+# Extended training with visualization
+python -m dqn_marl.train --episodes 20000 --plot
+
+# Custom training parameters
+python -m dqn_marl.train --episodes 10000 --plot --batch-size 64
+```
+
+#### Training Features:
+- **Experience Replay**: Stores and samples past experiences for stable learning
+- **Target Networks**: Separate target networks for improved stability
+- **Epsilon-Greedy Exploration**: Balances exploration vs exploitation
+- **Real-time Metrics**: Episode lengths, rewards, and learning progress
+- **Automatic Plotting**: Training curves and performance visualization
+
+### Ray RLlib Training
+
+Leverage Ray's distributed training capabilities:
+
+```bash
+# Start RLlib training
+python -m rllib_marl.train
+
+# Monitor training with TensorBoard
+tensorboard --logdir ~/ray_results
+```
+
+#### RLlib Features:
+- **Scalable Training**: Distributed across multiple cores/machines
+- **Algorithm Variety**: PPO, DQN, A3C, and more
+- **Hyperparameter Tuning**: Built-in optimization
+- **Checkpoint Management**: Save and resume training
+
+### Training Configuration
+
+Customize training in `dqn_marl/settings.py`:
+
+```python
+# Network Architecture
+HIDDEN_LAYERS = [128, 128, 64]  # Neural network layers
+LEARNING_RATE = 0.001           # Adam optimizer learning rate
+
+# Training Parameters
+BATCH_SIZE = 32                 # Mini-batch size
+MEMORY_SIZE = 10000            # Replay buffer capacity
+EPSILON_DECAY = 0.995          # Exploration decay rate
+TARGET_UPDATE_FREQ = 100       # Target network update frequency
+
+# Game Environment
+MAX_GAME_LENGTH = 100          # Maximum rounds per episode
+REWARD_WIN = 100               # Reward for winning
+REWARD_ELIMINATION = -50       # Penalty for being eliminated
+```
+
+### Model Management
+
+Trained models are automatically saved:
+
+```bash
+# Models saved to:
+dqn_marl/models/dqn_model_YYYYMMDD_HHMMSS.pth
+
+# Load and evaluate trained model:
+python -m dqn_marl.evaluate --model-path dqn_marl/models/your_model.pth
+```
+
+### Important Notes
+
+**Virtual Environment Required**: Due to the complex ML dependencies (PyTorch, Ray, NumPy, etc.), you **must** use a virtual environment and run training scripts as modules:
+
+✅ **Correct**:
+```bash
+# Activate virtual environment first
+.\venv\Scripts\Activate.ps1  # Windows PowerShell
+# or
+source venv/bin/activate     # Mac/Linux
+
+# Then run as module
+python -m dqn_marl.train --episodes 20000 --plot
+```
+
+❌ **Incorrect** (will cause import errors):
+```bash
+python dqn_marl/train.py --episodes 20000 --plot
+```
+
+The module approach (`-m`) ensures Python can properly resolve all package imports and dependencies.
 
 ## 🎲 Game Modes
 
@@ -461,14 +591,28 @@ nuel-sim/
 │   ├── player.py          # Player class
 │   ├── player_manager.py  # Player state management
 │   └── strategies.py      # Targeting strategies
+├── dqn_marl/               # Deep Q-Network MARL implementation
+│   ├── agent.py           # DQN agent logic
+│   ├── network.py         # Neural network architectures
+│   ├── replay_buffer.py   # Experience replay buffer
+│   ├── strategy.py        # ML-based strategy integration
+│   ├── settings.py        # DQN training configuration
+│   └── train.py           # Training script
+├── rllib_marl/             # Ray RLlib integration
+│   ├── config.py          # RLlib configuration
+│   ├── environment.py     # Multi-agent environment wrapper
+│   ├── strategy.py        # RLlib strategy integration
+│   └── train.py           # RLlib training script
 ├── visual/                 # Visualization components
 │   └── pygame_visual.py   # Pygame rendering
 ├── config/                 # Configuration management
+│   ├── factories.py       # Object creation factories
 │   └── settings.py        # Game settings
 ├── scripts/               # Utility scripts
 │   └── evaluate.py        # Statistical evaluation
 ├── main.py               # Entry point
-└── requirements.txt      # Dependencies
+├── requirements.txt      # Dependencies
+└── venv/                  # Virtual environment (after setup)
 ```
 
 ### Adding New Features
@@ -510,9 +654,11 @@ We welcome contributions! Here's how to get started:
 - 🧪 **Testing**: Add unit tests and integration tests
 - 📊 **Analytics**: Enhanced statistical analysis and visualization
 - 🎮 **Game Modes**: New gameplay mechanics and rule sets
-- 🧠 **AI Strategies**: Advanced targeting algorithms
+- 🧠 **AI Strategies**: Advanced targeting algorithms and ML models
+- 🤖 **MARL Research**: New multi-agent learning algorithms and experiments
 - 🎨 **Visualization**: Improved graphics and user interface
 - 📚 **Documentation**: Code documentation and tutorials
+- ⚡ **Performance**: Optimization for large-scale training and simulation
 
 ## 📄 License
 

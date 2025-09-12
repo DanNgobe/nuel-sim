@@ -10,8 +10,6 @@ from core.observation.observation_model import ObservationModel, NullObservation
 from core.strategies import BaseStrategy, TargetRandom
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
-from visual.pygame_visual import run_infinite_game_visual
-
 class GameManager(MultiAgentEnv):
     """Multi-agent environment wrapper for the shooting game."""
     
@@ -158,24 +156,6 @@ class GameManager(MultiAgentEnv):
         
         return self.current_game
 
-    def _calculate_rewards(self, shots: List[Tuple[Player, Player, bool]], game_over: bool) -> Dict[int, float]:
-        """Calculate rewards for each player based on the shots taken."""
-        rewards = {player.id: 0.0 for player in self.current_game.players}
-        for shooter, target, hit in shots:
-            if shooter.alive: # Survival reward
-                rewards[shooter.id] += 1.0
-
-            # Negative reward for shooting dead players (except ghosts)
-            if target and not self.prev_alive_state.get(target.id, True) and target.name != "Ghost":
-                rewards[shooter.id] -= 10.0
-        
-            if game_over:
-                alive_players = self.current_game.get_alive_players()
-                if shooter.alive and len(alive_players) > 0:
-                    rewards[shooter.id] += 100 / len(alive_players)
-        
-        return rewards
-
     def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None) -> Tuple[Dict, Dict]:
         """Reset the environment and return initial observations."""
         super().reset(seed=seed, options=options)
@@ -187,14 +167,11 @@ class GameManager(MultiAgentEnv):
         observations = {}
         infos = {}
         
-        for player in self.current_game.players:
+        for player in self.current_game.current_shooters:
             agent_id = player.id
             obs = self.observation_model.create_observation(player, self.current_game.players)
             observations[agent_id] = np.array(obs, dtype=np.float32)
-            infos[agent_id] = {
-                "accuracy": player.accuracy,
-                "alive": player.alive
-            }
+            infos[agent_id] = {}
         
         # Update previous alive state
         self.prev_alive_state = {
@@ -205,47 +182,65 @@ class GameManager(MultiAgentEnv):
 
     def step(self, action_dict: Dict[int, int]) -> Tuple[Dict, Dict, Dict, Dict, Dict]:
         """Execute one environment step with the given actions."""
-        shots = self.current_game.execute_turn(action_dict)
-        self.current_game.prepare_turn()
+
+        # Convert action_dict (player_id -> target_id) to (Player -> Player)
+        actions = {}
+        for player_id, target_id in action_dict.items():
+            shooter = next(p for p in self.current_game.players if p.id == player_id)
+            targets = self.observation_model.get_targets(shooter, self.current_game.players)
+            actions[shooter] = targets[target_id]
+
+        shots = self.current_game.execute_turn(actions)
+        game_over = self.current_game.is_over()
         
         # Get observations, rewards, and done flags
         observations = {}
         rewards = {}
-        terminateds = {}
+        terminateds = {player.id: not player.alive for player in self.current_game.players}
         truncateds = {}
         infos = {}
         
-        game_over = self.current_game.is_over()
-        rewards = self._calculate_rewards(shots, game_over)
+        # Initialize rewards for all current shooters
+        for player in self.current_game.current_shooters:
+            rewards[player.id] = 0.0
         
-        for player in self.current_game.players:
-            agent_id = player.id
+        # Calculate rewards and done flags based on previous and current states
+        for shooter, target, hit in shots:
+            if hit:
+                terminateds[target.id] = True
+
+            if shooter.alive: # Survival reward
+                rewards[shooter.id] += 1.0
+
+            # Negative reward for shooting dead players (except ghosts)
+            if target and not self.prev_alive_state.get(target.id, True) and target.name != "Ghost":
+                rewards[shooter.id] -= 10.0
+
+            if game_over:
+                alive_players = self.current_game.get_alive_players()
+                if shooter.alive and len(alive_players) > 0:
+                    rewards[shooter.id] += 100 / len(alive_players)
+
+        
+        # Create observations for current shooters
+        if not game_over:
+            self.current_game.prepare_turn()
+            self.prev_alive_state = {
+                player.id: player.alive for player in self.current_game.players
+            }
             
-            # Observation
+            for player in self.current_game.players:
+                terminateds[player.id] = True
+            
+        for player in self.current_game.current_shooters:
+            agent_id = player.id
             obs = self.observation_model.create_observation(player, self.current_game.players)
             observations[agent_id] = np.array(obs, dtype=np.float32)
-            
-            # Reward calculation
-            rewards[agent_id] = rewards.get(agent_id, 0.0)
-            
-            # Termination and truncation
-            terminateds[agent_id] = not player.alive
-            truncateds[agent_id] = False
-            
-            # Info
-            infos[agent_id] = {
-                "accuracy": player.accuracy,
-                "alive": player.alive
-            }
-        
+            infos[agent_id] = {}
+
         # Global termination condition
         terminateds["__all__"] = game_over
         truncateds["__all__"] = False
-        
-        # Update previous alive state for next step
-        self.prev_alive_state = {
-            player.id: player.alive for player in self.current_game.players
-        }
         
         return observations, rewards, terminateds, truncateds, infos
 
@@ -259,9 +254,20 @@ class GameManager(MultiAgentEnv):
 
     def render(self) -> None:
         """Render the environment."""
+        from visual.pygame_visual import run_infinite_game_visual
         run_infinite_game_visual(self)
 
     def close(self) -> None:
         """Clean up resources."""
         self.current_game = None
         self.prev_alive_state = {}
+
+    # Get observation for a specific player (for backward compatibility)
+    def get_player_observation(self, player_id: int) -> np.ndarray:
+        """Get observation for a specific player."""
+        player = next((p for p in self.current_game.players if p.id == player_id), None)
+        if player and player.alive:
+            obs = self.observation_model.create_observation(player, self.current_game.players)
+            return np.array(obs, dtype=np.float32)
+        else:
+            return np.zeros(self.observation_model.get_observation_dim(), dtype=np.float32)

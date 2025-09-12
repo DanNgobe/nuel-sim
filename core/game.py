@@ -66,30 +66,26 @@ class Game:
         self.current_shooters = shooters
         return self.current_shooters
 
-    def execute_turn(self, actions: Dict[int, int]) -> List[Tuple[Player, Optional[Player], bool]]:
+    def execute_turn(self, actions: Dict[Player, Player]) -> List[Tuple[Player, Optional[Player], bool]]:
         """
         Execute a turn with provided actions
         
         Args:
-            actions: Dictionary mapping player_id to target_id 
+            actions: Dictionary mapping player to target player
             
         Returns:
             List of shot results (shooter, target, hit)
         """
-        shooters = []
+        shooters = actions.keys()
         shots = []
         
         # Process each action
-        for player_id, target_id in actions.items():
-            # Find shooter and target
-            shooter = next(p for p in self.players if p.id == player_id)
-            target = next(p for p in self.players if p.id == target_id)
-
+        for shooter, target in actions.items():
             # Validate and execute shot
             if shooter and shooter.alive and shooter in self.current_shooters:
                 hit = shooter.shoot(target)
                 shots.append((shooter, target, hit))
-                shooters.append(shooter)
+
         
         # Process the shots
         self.gameplay.process_shots(shots)
@@ -109,7 +105,7 @@ class Game:
         actions = {}
         for player in eligible_players:
             target = player.choose_target(self.players)
-            actions[player.id] = target.id if target else None
+            actions[player] = target
         
         # Execute the turn
         return self.execute_turn(actions)

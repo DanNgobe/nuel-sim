@@ -12,15 +12,6 @@ class BaseStrategy(ABC):
     
     def __init__(self, name: str):
         self.name = name
-        self.dependencies = {}
-    
-    def add_dependency(self, key: str, dependency):
-        """Add a dependency to this strategy"""
-        self.dependencies[key] = dependency
-    
-    def get_dependency(self, key: str):
-        """Get a dependency by key"""
-        return self.dependencies.get(key)
     
     @abstractmethod
     def choose_target(self, me: "Player", players: List["Player"], observation=None) -> tuple[Optional["Player"], Optional[int]]:
