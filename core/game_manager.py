@@ -8,9 +8,8 @@ from core.player import Player
 from core.gameplay import GamePlay
 from core.observation.observation_model import ObservationModel, NullObservationModel
 from core.strategies import BaseStrategy, TargetRandom
-from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
-class GameManager(MultiAgentEnv):
+class GameManager():
     """Multi-agent environment wrapper for the shooting game."""
     
     def __init__(self, 
@@ -24,8 +23,6 @@ class GameManager(MultiAgentEnv):
                  has_ghost: bool = False,
                  screen_width: int = 800,
                  screen_height: int = 600):
-        
-        super().__init__()
         
         # Game parameters
         self.num_players = num_players
@@ -158,8 +155,6 @@ class GameManager(MultiAgentEnv):
 
     def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None) -> Tuple[Dict, Dict]:
         """Reset the environment and return initial observations."""
-        super().reset(seed=seed, options=options)
-        
         # Reset the game
         self.reset_game()
         

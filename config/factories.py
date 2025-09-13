@@ -22,16 +22,14 @@ def create_observation_model(model_type: str, params: dict):
     """Factory function to create observation model objects from string identifiers"""
     from core.observation import (
         ThreatLevelObservation, 
-        BayesianObservationModel, 
-        TurnAwareThreatObservation, 
-        SimpleObservation
+        BayesianMeanObservation,
+        TurnAwareThreatObservation
     )
     
     model_classes = {
         "ThreatLevelObservation": ThreatLevelObservation,
-        "BayesianObservationModel": BayesianObservationModel,
+        "BayesianMeanObservation": BayesianMeanObservation,
         "TurnAwareThreatObservation": TurnAwareThreatObservation,
-        "SimpleObservation": SimpleObservation,
     }
     
     if model_type not in model_classes:
@@ -83,6 +81,27 @@ def create_strategy(strategy_type: str):
             model_path=model_path,
             explore=False  # Default to no exploration for evaluation
         )
+    
+    if strategy_type == "PPOStrategy":
+        from ppo_marl.strategy import PPOStrategy
+        from . import settings    
+        # Create observation model for PPOStrategy
+        observation_model = create_observation_model(
+            settings.OBSERVATION_MODEL_TYPE, 
+            settings.OBSERVATION_MODEL_PARAMS
+        )
+        model_path = get_ppo_model_path(
+            settings.NUM_PLAYERS,
+            settings.GAME_PLAY_TYPE, 
+            settings.OBSERVATION_MODEL_TYPE,
+            settings.OBSERVATION_MODEL_PARAMS
+        )
+                
+        return PPOStrategy(
+            observation_model=observation_model,
+            model_path=model_path,
+            explore=False  # Default to no exploration for evaluation
+        )
 
     strategy_classes = {
         "TargetStrongest": TargetStrongest,
@@ -90,6 +109,7 @@ def create_strategy(strategy_type: str):
         "TargetStronger": TargetStronger,
         "TargetRandom": TargetRandom,
         "TargetNearest": TargetNearest,
+        "PPOStrategy": None,  # Handled above
     }
     
     if strategy_type not in strategy_classes:
@@ -108,6 +128,12 @@ def get_model_path(num_players: int, gameplay_type: str, observation_model_type:
     # Create a temporary observation model to get its name
     obs_model = create_observation_model(observation_model_type, observation_params)
     return f"dqn_marl/models/{num_players}_{gameplay_type}_{obs_model.name}.pth"
+
+def get_ppo_model_path(num_players: int, gameplay_type: str, observation_model_type: str, observation_params: dict):
+    """Generate PPO model path based on configuration"""
+    # Create a temporary observation model to get its name
+    obs_model = create_observation_model(observation_model_type, observation_params)
+    return f"ppo_marl/models/{num_players}_{gameplay_type}_{obs_model.name}.pth"
 
 
 # Convenience function to get all configured objects at once

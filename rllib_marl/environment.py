@@ -2,6 +2,18 @@ from core.game_manager import GameManager
 from core.gameplay import SimultaneousGamePlay
 from core.observation import ThreatLevelObservation
 
+from ray.rllib.env.multi_agent_env import MultiAgentEnv
+from core.game_manager import GameManager as BaseGameManager
+
+class GameManager(MultiAgentEnv, BaseGameManager):
+    def __init__(self, **kwargs):
+        MultiAgentEnv.__init__(self)
+        BaseGameManager.__init__(self, **kwargs)
+
+    def reset(self, *, seed=None, options=None):
+        MultiAgentEnv.reset(self, seed=seed, options=options)  # now explicit
+        return BaseGameManager.reset(self, seed=seed, options=options)
+
 def NuelMultiAgentEnv(config):
     """Factory function to create GameManager with RLlib config"""
     return GameManager(

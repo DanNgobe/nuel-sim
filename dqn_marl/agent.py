@@ -7,9 +7,16 @@ import dqn_marl.settings as settings
 import numpy as np
 
 class SharedAgent:
+    """
+    Double DQN (DDQN) agent implementation for improved stability.
+    Uses separate policy and target networks to decouple action selection 
+    and value estimation, reducing overestimation bias.
+    """
     def __init__(self, observation_dim, action_dim, model_path=None):
-        # Only one network - no target network for vanilla DQN
+        # Double DQN: Policy network for action selection and target network for value estimation
         self.policy_net = PolicyNetwork(observation_dim, action_dim, settings.HIDDEN_SIZE).to(settings.DEVICE)
+        self.target_net = PolicyNetwork(observation_dim, action_dim, settings.HIDDEN_SIZE).to(settings.DEVICE)
+        self.target_net.load_state_dict(self.policy_net.state_dict())
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=settings.LEARNING_RATE)
         self.epsilon = settings.EPSILON_START
         self.action_dim = action_dim
@@ -44,9 +51,12 @@ class SharedAgent:
         # Current Q-values
         q_values = self.policy_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
 
-        # Next Q-values using the same network (vanilla DQN)
+        # Double DQN: Decouple action selection and evaluation to reduce overestimation bias
         with torch.no_grad():
-            next_q_values = self.policy_net(next_states).max(1)[0]
+            # Select action with max Q-value from policy net
+            next_actions = self.policy_net(next_states).argmax(1, keepdim=True)
+            # Evaluate using target net
+            next_q_values = self.target_net(next_states).gather(1, next_actions).squeeze(1)
         
         expected_q = rewards + settings.GAMMA * next_q_values * (1 - dones)
 
@@ -58,6 +68,10 @@ class SharedAgent:
         # Gradient clipping to prevent exploding gradients
         torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.0)
         self.optimizer.step()
+
+    def update_target_network(self):
+        """Update target network with policy network weights"""
+        self.target_net.load_state_dict(self.policy_net.state_dict())
     
     def decay_epsilon(self, episode, total_episodes=25000):
         # Linear decay: gradually decrease epsilon from START to END over total_episodes

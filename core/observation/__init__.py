@@ -1,6 +1,5 @@
 from .threat_level_observation import ThreatLevelObservation
-from .bayesian_observation_model import BayesianObservationModel
+from .bayesian_mean_observation import BayesianMeanObservation
 from .observation_model import NullObservationModel
 from .observation_model import ObservationModel
 from .turn_aware_threat_observation import TurnAwareThreatObservation
-from .simple_observation import SimpleObservation

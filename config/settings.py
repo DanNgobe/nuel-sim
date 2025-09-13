@@ -4,7 +4,7 @@
 
 # Game Settings
 NUM_PLAYERS = 3
-NUM_ROUNDS = None
+NUM_ROUNDS = None  # None for infinite
 RUN_MODE = "visualize"  # "visualize", or "single"
 
 # Gameplay Configuration
@@ -13,19 +13,20 @@ GAME_PLAY_TYPE = "SimultaneousGamePlay"
 HAS_GHOST = False
 
 # Observation Model Configuration
-# Available options: "ThreatLevelObservation", "BayesianObservationModel", "TurnAwareThreatObservation", "SimpleObservation"
+# Available options: "ThreatLevelObservation", "BayesianMeanObservation", "BayesianUcbObservation", "TurnAwareThreatObservation"
 OBSERVATION_MODEL_TYPE = "ThreatLevelObservation"
 OBSERVATION_MODEL_PARAMS = {
     "num_players": NUM_PLAYERS,
-    "has_ghost": HAS_GHOST
+    "has_ghost": HAS_GHOST,
+    # "setup_shots": 500,
 }
 
 # Player Settings
 MARKSMANSHIP_RANGE = (0.3, 0.9)
 
 # Strategy Configuration (string identifiers)
-# Available options: "TargetStrongest", "TargetWeaker", "TargetStronger", "TargetRandom", "TargetNearest", "RLlibStrategy", "DQNStrategy"
-ASSIGNED_STRATEGY_TYPES = ["DQNStrategy","DQNStrategy","DQNStrategy"]
+# Available options: "TargetStrongest", "TargetWeaker", "TargetStronger", "TargetRandom", "TargetNearest", "RLlibStrategy", "DQNStrategy", "PPOStrategy"
+ASSIGNED_STRATEGY_TYPES = ["DQNStrategy"] * NUM_PLAYERS
 ASSIGNED_ACCURACIES = []
 
 # RLlib Strategy Configuration

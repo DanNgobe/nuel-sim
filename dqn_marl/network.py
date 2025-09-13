@@ -7,9 +7,10 @@ class PolicyNetwork(nn.Module):
             nn.Linear(input_dim, hidden_size),
             nn.LayerNorm(hidden_size),  # Better than BatchNorm for RL
             nn.ReLU(),
-            nn.Dropout(0.1),  # Prevent overfitting
+            nn.Dropout(0.3),  # Increased dropout rate to reduce overfitting
             nn.Linear(hidden_size, hidden_size // 2),
-            nn.ReLU(),
+            nn.ReLU(), 
+            nn.Dropout(0.3),  # Added additional dropout layer
             nn.Linear(hidden_size // 2, output_dim)
         )
 
