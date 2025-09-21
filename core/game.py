@@ -47,10 +47,7 @@ class Game:
         """Check if the game is over"""
         game_over = self.gameplay.is_over(self.players, self.get_alive_players())
         rounds_exceeded = self.rounds_remaining is not None and self.rounds_remaining <= 0
-        
-        if game_over or rounds_exceeded:
-            self.observation_model.reset()
-            
+                 
         return game_over or rounds_exceeded
 
     def prepare_turn(self) -> List[Player]:

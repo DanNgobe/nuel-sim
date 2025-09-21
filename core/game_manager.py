@@ -136,6 +136,7 @@ class GameManager():
     def reset_game(self) -> Game:
         """Create a new game instance."""
         players = self._create_players()
+
         self.current_game = Game(
             players=players,
             gameplay=self.gameplay,
@@ -182,8 +183,17 @@ class GameManager():
         actions = {}
         for player_id, target_id in action_dict.items():
             shooter = next(p for p in self.current_game.players if p.id == player_id)
-            targets = self.observation_model.get_targets(shooter, self.current_game.players)
-            actions[shooter] = targets[target_id]
+            
+            # Use the new robust action-to-target mapping
+            target = self.observation_model.get_target_from_action(
+                shooter, self.current_game.players, target_id
+            )
+            
+            # Skip invalid actions (target will be None for invalid action_id)
+            if target is not None:
+                actions[shooter] = target
+            else:
+                print(f"Warning: Invalid action {target_id} for player {player_id}, skipping turn")
 
         shots = self.current_game.execute_turn(actions)
         game_over = self.current_game.is_over()
@@ -223,9 +233,6 @@ class GameManager():
             self.prev_alive_state = {
                 player.id: player.alive for player in self.current_game.players
             }
-            
-            for player in self.current_game.players:
-                terminateds[player.id] = True
             
         for player in self.current_game.current_shooters:
             agent_id = player.id

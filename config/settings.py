@@ -14,11 +14,11 @@ HAS_GHOST = False
 
 # Observation Model Configuration
 # Available options: "ThreatLevelObservation", "BayesianMeanObservation", "BayesianUcbObservation", "TurnAwareThreatObservation"
-OBSERVATION_MODEL_TYPE = "ThreatLevelObservation"
+OBSERVATION_MODEL_TYPE = "BayesianMeanObservation"
 OBSERVATION_MODEL_PARAMS = {
     "num_players": NUM_PLAYERS,
     "has_ghost": HAS_GHOST,
-    # "setup_shots": 500,
+    "setup_shots": 100,
 }
 
 # Player Settings

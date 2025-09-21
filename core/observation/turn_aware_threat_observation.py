@@ -2,6 +2,7 @@ from .threat_level_observation import ThreatLevelObservation
 
 class TurnAwareThreatObservation(ThreatLevelObservation):
     def __init__(self, num_players, has_ghost=False):
+        # Call parent constructor which handles singleton initialization
         super().__init__(num_players, has_ghost)
 
     @property
@@ -45,6 +46,10 @@ class TurnAwareThreatObservation(ThreatLevelObservation):
 
     def get_targets(self, player, players):
         # Return targets sorted by accuracy descending (to match observation)
+        # Include ghost if has_ghost is True
         others = [p for p in players if p != player]
-        others.sort(key=lambda p: p.accuracy if p.alive else 0.0, reverse=True)
+        # Sort by accuracy descending, with ghosts at the end
+        others.sort(key=lambda p: (
+            (p.accuracy if p.alive else 0.0) if p.name != "Ghost" else -1.0
+        ), reverse=True)
         return others

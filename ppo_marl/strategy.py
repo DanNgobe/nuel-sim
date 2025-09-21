@@ -53,13 +53,11 @@ class PPOStrategy(BaseStrategy):
         else:
             action, _, _ = self.agent.act(observation, explore=False)
 
-        # Get valid targets
-        targets = self.observation_model.get_targets(me, players)
-
-        # Return the chosen target
-        if action < len(targets):
-            return targets[action], action
-        return None, None
+        # Use the new robust action-to-target mapping
+        target = self.observation_model.get_target_from_action(me, players, action)
+        
+        # Return the chosen target (None if action was invalid)
+        return target, action if target is not None else None
 
     def get_agent(self):
         """Get the underlying PPO agent"""

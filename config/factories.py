@@ -37,7 +37,7 @@ def create_observation_model(model_type: str, params: dict):
     
     return model_classes[model_type](**params)
 
-def create_strategy(strategy_type: str):
+def create_strategy(strategy_type: str, observation_model=None):
     """Factory function to create strategy objects from string identifiers"""
     from core.strategies import (
         TargetStrongest, 
@@ -50,11 +50,13 @@ def create_strategy(strategy_type: str):
     if strategy_type == "RLlibStrategy":
         from rllib_marl.strategy import RLlibStrategy
         from . import settings    
-        # Create observation model for RLlibStrategy
-        observation_model = create_observation_model(
-            settings.OBSERVATION_MODEL_TYPE, 
-            settings.OBSERVATION_MODEL_PARAMS
-        )
+        
+        # Use passed observation model or create new one if none provided
+        if observation_model is None:
+            observation_model = create_observation_model(
+                settings.OBSERVATION_MODEL_TYPE, 
+                settings.OBSERVATION_MODEL_PARAMS
+            )
                 
         return RLlibStrategy(
             checkpoint_path=settings.RLLIB_CHECKPOINT_PATH,
@@ -64,11 +66,14 @@ def create_strategy(strategy_type: str):
     if strategy_type == "DQNStrategy":
         from dqn_marl.strategy import DQNStrategy
         from . import settings    
-        # Create observation model for DQNStrategy
-        observation_model = create_observation_model(
-            settings.OBSERVATION_MODEL_TYPE, 
-            settings.OBSERVATION_MODEL_PARAMS
-        )
+        
+        # Use passed observation model or create new one if none provided
+        if observation_model is None:
+            observation_model = create_observation_model(
+                settings.OBSERVATION_MODEL_TYPE, 
+                settings.OBSERVATION_MODEL_PARAMS
+            )
+        
         model_path = get_model_path(
             settings.NUM_PLAYERS,
             settings.GAME_PLAY_TYPE, 
@@ -85,11 +90,14 @@ def create_strategy(strategy_type: str):
     if strategy_type == "PPOStrategy":
         from ppo_marl.strategy import PPOStrategy
         from . import settings    
-        # Create observation model for PPOStrategy
-        observation_model = create_observation_model(
-            settings.OBSERVATION_MODEL_TYPE, 
-            settings.OBSERVATION_MODEL_PARAMS
-        )
+        
+        # Use passed observation model or create new one if none provided
+        if observation_model is None:
+            observation_model = create_observation_model(
+                settings.OBSERVATION_MODEL_TYPE, 
+                settings.OBSERVATION_MODEL_PARAMS
+            )
+        
         model_path = get_ppo_model_path(
             settings.NUM_PLAYERS,
             settings.GAME_PLAY_TYPE, 
@@ -118,9 +126,9 @@ def create_strategy(strategy_type: str):
     return strategy_classes[strategy_type]()
 
 
-def create_strategies_list(strategy_types: list):
+def create_strategies_list(strategy_types: list, observation_model=None):
     """Factory function to create a list of strategy objects"""
-    return [create_strategy(strategy_type) for strategy_type in strategy_types]
+    return [create_strategy(strategy_type, observation_model) for strategy_type in strategy_types]
 
 
 def get_model_path(num_players: int, gameplay_type: str, observation_model_type: str, observation_params: dict):
@@ -146,7 +154,7 @@ def create_game_objects():
         settings.OBSERVATION_MODEL_TYPE, 
         settings.OBSERVATION_MODEL_PARAMS
     )
-    strategies = create_strategies_list(settings.ASSIGNED_STRATEGY_TYPES)
+    strategies = create_strategies_list(settings.ASSIGNED_STRATEGY_TYPES, observation_model)
     model_path = get_model_path(
         settings.NUM_PLAYERS,
         settings.GAME_PLAY_TYPE, 

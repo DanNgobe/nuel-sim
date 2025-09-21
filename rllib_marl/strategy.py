@@ -65,16 +65,16 @@ class RLlibStrategy(BaseStrategy):
         # Convert to integer action (remove batch dimension)
         action = int(action_tensor[0].item())
 
-        # Get valid targets
+        # Use the new robust action-to-target mapping
         if self.observation_model:
-            targets = self.observation_model.get_targets(me, players)
+            target = self.observation_model.get_target_from_action(me, players, action)
         else:
+            # Fallback for when no observation model is provided
             targets = [p for p in players if p != me and p.alive]
+            target = targets[action] if 0 <= action < len(targets) else None
 
-        # Return the chosen target
-        if 0 <= action < len(targets):
-            return targets[action], action
-        return None, None
+        # Return the chosen target (None if action was invalid)
+        return target, action if target is not None else None
 
     def _register_nuel_env(self):
         """Register the Nuel environment with RLlib (same as in train.py)"""

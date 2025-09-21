@@ -4,6 +4,10 @@ from .observation_model import ObservationModel
 
 class BayesianMeanObservation(ObservationModel):
     def __init__(self, num_players, has_ghost=False, setup_shots=10):
+        # Prevent re-initialization in singleton
+        if hasattr(self, "_initialized") and self._initialized:
+            return
+            
         self.num_players = num_players
         self.setup_shots = setup_shots
         self.has_ghost = has_ghost
@@ -12,6 +16,8 @@ class BayesianMeanObservation(ObservationModel):
         self.global_beliefs = {
             pid: {'alpha': 1.0, 'beta': 1.0, 'mean': 0.5} for pid in range(num_players + (1 if has_ghost else 0))
         }
+        
+        self._initialized = True
 
     @property
     def name(self) -> str:
@@ -19,7 +25,10 @@ class BayesianMeanObservation(ObservationModel):
 
 
     def initialize(self, players):
-        self.reset()
+        self.global_beliefs = {
+            pid: {'alpha': 1.0, 'beta': 1.0, 'mean': 0.5} for pid in range(self.num_players + (1 if self.has_ghost else 0))
+        }
+
         for _ in range(self.setup_shots):
             for player in players:
                 if player.name == "Ghost":
@@ -53,7 +62,10 @@ class BayesianMeanObservation(ObservationModel):
 
     def get_targets(self, player, players):
         others = [p for p in players if p != player]
-        others.sort(key=lambda p: (self.global_beliefs[p.id]['mean'] if p.alive else 0.0), reverse=True)
+        # Sort by bayesian mean belief, with ghosts at the end
+        others.sort(key=lambda p: (
+            (self.global_beliefs[p.id]['mean'] if p.alive else 0.0) if p.name != "Ghost" else -1.0
+        ), reverse=True)
         return others
     
     def update(self, shots, remaining_rounds=None):
@@ -67,6 +79,9 @@ class BayesianMeanObservation(ObservationModel):
             belief['mean'] = belief['alpha'] / (belief['alpha'] + belief['beta'])
 
     def reset(self):
-        self.global_beliefs = {pid: {'alpha': 1.0, 'beta': 1.0, 'mean': 0.5} for pid in range(self.num_players + (1 if self.has_ghost else 0))}
+        """Reset bayesian beliefs to initial state"""
+        self.global_beliefs = {
+            pid: {'alpha': 1.0, 'beta': 1.0, 'mean': 0.5} for pid in range(self.num_players + (1 if self.has_ghost else 0))
+        }
         if self.has_ghost:
-            self.global_beliefs[self.num_players]['mean'] = -1.0 # Assuming ghost is the last player
+            self.global_beliefs[self.num_players]['mean'] = -1.0  # Assuming ghost is the last player
