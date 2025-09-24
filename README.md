@@ -1,4 +1,9 @@
-# Nuel Simulation Game 🎯
+# Nuel Simul# Machine Learning Integration
+- **Deep Q-Network (DQN)**: Multi-agent deep reinforcement learning with experience replay
+- **Proximal Policy Optimization (PPO)**: Advanced policy gradient MARL implementation
+- **Ray RLlib Support**: Scalable distributed multi-agent reinforcement learning
+- **Observation Models**: Advanced Bayesian and abstention-aware observation systems
+- **Training Automation**: Built-in evaluation and plot generation after trainingGame 🎯
 
 A comprehensive Python-based simulation framework for **N-player standoffs** (Duels, Truels, Nuels, and Gruels) with real-time **Pygame** visualization, advanced analytics, and **Multi-Agent Reinforcement Learning (MARL)** capabilities. This extensible framework enables researchers, game theorists, and AI enthusiasts to explore strategic interactions in multi-player elimination games using both classical strategies and cutting-edge machine learning approaches.
 
@@ -18,11 +23,11 @@ A comprehensive Python-based simulation framework for **N-player standoffs** (Du
 - **Training Visualization**: Real-time training metrics and performance plots
 
 ### 📊 Advanced Analytics
-- **Bayesian Observation Models**: Dynamic belief updating based on observed player performance
-- **Statistical Evaluation**: Win rate analysis, survivor distribution, and strategic effectiveness metrics
-- **Data Visualization**: Comprehensive charts and heatmaps for strategy analysis
-- **Export Capabilities**: Save simulation results for external analysis
-- **Training Metrics**: Learning curves, reward tracking, and agent performance analysis
+- **Multiple Observation Models**: ThreatLevel, Bayesian, BayesianAbstention, TurnAware, and SimpleId models
+- **Enhanced Evaluation**: Combined heatmaps, accuracy vs win rate analysis, and statistical summaries
+- **Automated Visualization**: Save evaluation plots and training metrics to file systems
+- **Strategy Comparison**: Single-strategy evaluation mode for isolated performance testing
+- **Training Integration**: Automatic post-training evaluation with plot generation
 
 ### 🎨 Visual Interface
 - **Real-time Visualization**: Live Pygame rendering with player positions and shot trajectories
@@ -158,19 +163,35 @@ Train intelligent agents using Deep Q-Networks:
 # Basic training (2000 episodes)
 python -m dqn_marl.train
 
-# Extended training with visualization
-python -m dqn_marl.train --episodes 20000 --plot
+# Training with plots and evaluation
+python -m dqn_marl.train --episodes 5000 --plot --evaluate
 
-# Custom training parameters
-python -m dqn_marl.train --episodes 10000 --plot --batch-size 64
+# Extended training with all features
+python -m dqn_marl.train --episodes 20000 --plot --evaluate
 ```
 
 #### Training Features:
 - **Experience Replay**: Stores and samples past experiences for stable learning
 - **Target Networks**: Separate target networks for improved stability
 - **Epsilon-Greedy Exploration**: Balances exploration vs exploitation
-- **Real-time Metrics**: Episode lengths, rewards, and learning progress
-- **Automatic Plotting**: Training curves and performance visualization
+- **Training Metrics**: Episode lengths, rewards, win rates, and learning curves
+- **Automatic Evaluation**: Post-training performance analysis with plot generation
+- **Model Management**: Automatic saving to organized directory structure
+
+### PPO Multi-Agent Training
+
+Train using Proximal Policy Optimization:
+
+```bash
+# Basic PPO training
+python -m ppo_marl.train
+
+# PPO with plots and evaluation
+python -m ppo_marl.train --episodes 5000 --plot --evaluate
+
+# Extended PPO training
+python -m ppo_marl.train --episodes 20000 --plot --evaluate
+```
 
 ### Ray RLlib Training
 
@@ -213,14 +234,23 @@ REWARD_ELIMINATION = -50       # Penalty for being eliminated
 
 ### Model Management
 
-Trained models are automatically saved:
+Trained models are automatically saved with organized structure:
 
 ```bash
-# Models saved to:
-dqn_marl/models/dqn_model_YYYYMMDD_HHMMSS.pth
+# DQN Models saved to:
+dqn_marl/models/{num_players}/{gameplay_type}/{observation_model_name}.pth
 
-# Load and evaluate trained model:
-python -m dqn_marl.evaluate --model-path dqn_marl/models/your_model.pth
+# PPO Models saved to:
+ppo_marl/models/{num_players}/{gameplay_type}/{observation_model_name}.pth
+
+# Evaluation results saved to:
+{model_directory}/evaluation/heatmaps.png
+{model_directory}/evaluation/statistics.png
+
+# Example structure:
+dqn_marl/models/4/SimultaneousGamePlay/BayesianAbstentionObservation_with_abstention_setup_10.pth
+dqn_marl/models/4/SimultaneousGamePlay/evaluation/heatmaps.png
+dqn_marl/models/4/SimultaneousGamePlay/evaluation/statistics.png
 ```
 
 ### Important Notes
@@ -234,13 +264,16 @@ python -m dqn_marl.evaluate --model-path dqn_marl/models/your_model.pth
 # or
 source venv/bin/activate     # Mac/Linux
 
-# Then run as module
-python -m dqn_marl.train --episodes 20000 --plot
+# Then run as module with new evaluation features
+python -m dqn_marl.train --episodes 5000 --plot --evaluate
+python -m ppo_marl.train --episodes 5000 --plot --evaluate
+python -m scripts.evaluate --episodes 1000 --strategy DQNStrategy --output ./results
 ```
 
 ❌ **Incorrect** (will cause import errors):
 ```bash
-python dqn_marl/train.py --episodes 20000 --plot
+python dqn_marl/train.py --episodes 5000 --plot --evaluate
+python scripts/evaluate.py --episodes 1000
 ```
 
 The module approach (`-m`) ensures Python can properly resolve all package imports and dependencies.
@@ -336,14 +369,24 @@ from core.observation import ThreatLevelObservation
 obs_model = ThreatLevelObservation(num_players=3)
 ```
 
-### Bayesian Observation Model
-Advanced model that maintains belief distributions about player accuracies.
+### Bayesian Mean Observation
+Maintains belief distributions about player accuracies using Beta distributions.
 ```python
-from core.observation import BayesianObservationModel
-obs_model = BayesianObservationModel(
+from core.observation import BayesianMeanObservation
+obs_model = BayesianMeanObservation(
     num_players=3,
-    setup_shots=10,     # Initial belief calibration
-    ucb_scale=1.0       # Exploration parameter
+    setup_shots=10     # Initial belief calibration
+)
+```
+
+### Bayesian Abstention Observation
+Advanced Bayesian model supporting abstention (shooting ghost) without belief updates.
+```python
+from core.observation import BayesianAbstentionObservation
+obs_model = BayesianAbstentionObservation(
+    num_players=3,
+    has_ghost=True,    # Enable abstention mechanics
+    setup_shots=10     # Initial calibration shots
 )
 ```
 
@@ -352,6 +395,13 @@ Considers turn order and distance in threat assessment.
 ```python
 from core.observation import TurnAwareThreatObservation
 obs_model = TurnAwareThreatObservation(num_players=3)
+```
+
+### Simple ID Observation
+Deterministic observation model that sorts targets by player ID.
+```python
+from core.observation import SimpleIdObservation
+obs_model = SimpleIdObservation(num_players=3, has_ghost=False)
 ```
 
 ## ⚙️ Configuration
@@ -405,18 +455,27 @@ PLAYER_RADIUS = 20   # Smaller players for more space
 
 ## 📈 Running Evaluations
 
-### Statistical Analysis
+### Enhanced Statistical Analysis
 ```bash
-# Run 1000 episodes with detailed analysis
-python scripts/evaluate.py --episodes 1000
+# Basic evaluation with plot display
+python -m scripts.evaluate --episodes 1000
+
+# Single strategy evaluation
+python -m scripts.evaluate --episodes 1000 --strategy TargetRandom
+
+# Save evaluation plots to directory
+python -m scripts.evaluate --episodes 1000 --strategy DQNStrategy --output ./results
+
+# Compare different strategies
+python -m scripts.evaluate --episodes 2000 --strategy PPOStrategy --output ./ppo_results
 ```
 
 ### Evaluation Features
-- **Win Rate Analysis**: Per-player and per-accuracy-rank statistics
-- **Survivor Distribution**: How many players typically survive
-- **Shot Matrix Analysis**: Who shoots whom, organized by accuracy rankings
-- **Heatmap Visualization**: Visual representation of targeting patterns
-- **Statistical Plots**: Automated generation of analysis charts
+- **Combined Visualizations**: All heatmaps and statistics saved in organized image files
+- **Strategy Isolation**: Test single strategies across all players for pure performance analysis
+- **Accuracy vs Win Rate**: Scatter plots showing correlation between skill and success
+- **Automated Saving**: Optional output directory for batch analysis and archiving
+- **Training Integration**: Automatic evaluation after DQN/PPO training completion
 
 ### Sample Output
 ```
@@ -425,14 +484,27 @@ S1: 847 episodes
 S2: 153 episodes
 
 Win counts after 1000 episodes:
-P0: 445 wins
-P1: 402 wins
-P2: 153 wins
+P1: 245 wins
+P2: 302 wins
+P3: 298 wins
+P4: 155 wins
 
 Win counts by accuracy rank (worst to best):
 A0: 123 wins
-A1: 334 wins
-A2: 543 wins
+A1: 234 wins
+A2: 334 wins
+A3: 309 wins
+
+=== Accuracy Rank Shot Matrix by Number of Alive Players ===
+Alive players: 4
+        A0      A1      A2      A3
+A0      0       45      23      12
+A1      34      0       56      28
+A2      28      42      0       67
+A3      31      29      45      0
+
+Heatmaps saved to: ./results/heatmaps.png
+Statistics saved to: ./results/statistics.png
 ```
 
 ## 📚 API Reference
@@ -584,35 +656,57 @@ def analyze_strategy_performance():
 ### Project Structure
 ```
 nuel-sim/
-├── core/                    # Core game logic
-│   ├── gameplay/           # Game mode implementations
-│   ├── observation/        # Observation models for ML
-│   ├── game.py            # Main game engine
-│   ├── player.py          # Player class
-│   ├── player_manager.py  # Player state management
-│   └── strategies.py      # Targeting strategies
-├── dqn_marl/               # Deep Q-Network MARL implementation
-│   ├── agent.py           # DQN agent logic
-│   ├── network.py         # Neural network architectures
-│   ├── replay_buffer.py   # Experience replay buffer
-│   ├── strategy.py        # ML-based strategy integration
-│   ├── settings.py        # DQN training configuration
-│   └── train.py           # Training script
-├── rllib_marl/             # Ray RLlib integration
-│   ├── config.py          # RLlib configuration
-│   ├── environment.py     # Multi-agent environment wrapper
-│   ├── strategy.py        # RLlib strategy integration
-│   └── train.py           # RLlib training script
-├── visual/                 # Visualization components
-│   └── pygame_visual.py   # Pygame rendering
-├── config/                 # Configuration management
-│   ├── factories.py       # Object creation factories
-│   └── settings.py        # Game settings
-├── scripts/               # Utility scripts
-│   └── evaluate.py        # Statistical evaluation
-├── main.py               # Entry point
-├── requirements.txt      # Dependencies
-└── venv/                  # Virtual environment (after setup)
+├── core/                           # Core game logic
+│   ├── gameplay/                  # Game mode implementations
+│   │   ├── base.py               # Base gameplay classes
+│   │   ├── random_mode.py        # Random gameplay mode
+│   │   ├── sequential.py         # Sequential gameplay
+│   │   └── simultaneous.py       # Simultaneous gameplay
+│   ├── observation/               # Observation models for ML
+│   │   ├── bayesian_abstention_observation.py    # Abstention-aware Bayesian model
+│   │   ├── bayesian_mean_observation.py          # Standard Bayesian model
+│   │   ├── observation_model.py                  # Base observation interface
+│   │   ├── simple_id_observation.py              # Simple deterministic model
+│   │   ├── threat_level_observation.py           # Basic threat-based model
+│   │   └── turn_aware_threat_observation.py      # Turn-aware model
+│   ├── game.py                    # Main game engine
+│   ├── game_manager.py            # Game state management
+│   ├── player.py                  # Player class
+│   ├── player_manager.py          # Player state management
+│   └── strategies.py              # Targeting strategies
+├── dqn_marl/                      # Deep Q-Network MARL implementation
+│   ├── models/                    # Trained model storage
+│   ├── agent.py                   # DQN agent logic
+│   ├── network.py                 # Neural network architectures
+│   ├── replay_buffer.py           # Experience replay buffer
+│   ├── settings.py                # DQN training configuration
+│   ├── strategy.py                # ML-based strategy integration
+│   └── train.py                   # Training script with evaluation
+├── ppo_marl/                      # Proximal Policy Optimization MARL
+│   ├── models/                    # Trained model storage
+│   ├── agent.py                   # PPO agent implementation
+│   ├── evaluate.py                # PPO evaluation utilities
+│   ├── memory.py                  # PPO memory buffer
+│   ├── network.py                 # PPO network architectures
+│   ├── settings.py                # PPO configuration
+│   ├── strategy.py                # PPO strategy integration
+│   └── train.py                   # PPO training with evaluation
+├── rllib_marl/                    # Ray RLlib integration
+│   ├── config.py                  # RLlib configuration
+│   ├── environment.py             # Multi-agent environment wrapper
+│   ├── strategy.py                # RLlib strategy integration
+│   └── train.py                   # RLlib training script
+├── visual/                        # Visualization components
+│   └── pygame_visual.py           # Pygame rendering
+├── config/                        # Configuration management
+│   ├── factories.py               # Object creation factories
+│   └── settings.py                # Game settings
+├── scripts/                       # Utility scripts
+│   └── evaluate.py                # Enhanced statistical evaluation
+├── suppress_warnings.py           # Warning suppression utilities
+├── main.py                       # Entry point
+├── requirements.txt              # Dependencies
+└── venv/                         # Virtual environment (after setup)
 ```
 
 ### Adding New Features
@@ -652,13 +746,13 @@ We welcome contributions! Here's how to get started:
 
 ### Contribution Areas
 - 🧪 **Testing**: Add unit tests and integration tests
-- 📊 **Analytics**: Enhanced statistical analysis and visualization
-- 🎮 **Game Modes**: New gameplay mechanics and rule sets
-- 🧠 **AI Strategies**: Advanced targeting algorithms and ML models
-- 🤖 **MARL Research**: New multi-agent learning algorithms and experiments
-- 🎨 **Visualization**: Improved graphics and user interface
-- 📚 **Documentation**: Code documentation and tutorials
-- ⚡ **Performance**: Optimization for large-scale training and simulation
+- 📊 **Analytics**: Additional statistical analysis and visualization methods
+- 🎮 **Game Modes**: New gameplay mechanics and rule variations
+- 🧠 **Observation Models**: Novel observation and belief systems
+- 🤖 **MARL Algorithms**: Advanced multi-agent learning implementations
+- 🎨 **Visualization**: Enhanced graphics and interactive interfaces
+- 📚 **Documentation**: Code documentation and research tutorials
+- ⚡ **Performance**: Optimization for large-scale distributed training
 
 ## 📄 License
 

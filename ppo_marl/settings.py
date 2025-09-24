@@ -15,4 +15,4 @@ GAE_LAMBDA = 0.95
 
 def get_model_path(num_players, gameplay_name, observation_name):
     """Generate model path based on game configuration"""
-    return f"ppo_marl/models/{num_players}_{gameplay_name}_{observation_name}.pth"
+    return f"ppo_marl/models/{num_players}/{gameplay_name}/{observation_name}.pth"

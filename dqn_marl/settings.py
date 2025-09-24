@@ -15,4 +15,4 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Model path configuration
 def get_model_path(num_players, gameplay_name, observation_name):
     """Generate model path based on game configuration"""
-    return f"dqn_marl/models/{num_players}_{gameplay_name}_{observation_name}.pth"
+    return f"dqn_marl/models/{num_players}/{gameplay_name}/{observation_name}.pth"
