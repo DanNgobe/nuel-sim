@@ -107,7 +107,7 @@ def plot_training_stats(stats, episodes, save_path="dqn_marl/models/training_sta
     print(f"Training plots saved to: {save_path}")
     plt.show()
 
-def main(episodes=2000, plot_stats=False):
+def main(episodes=2000, plot_stats=False, evaluate_after=False):
     # Create game objects using factory
     game_objects = create_game_objects()
     
@@ -290,11 +290,22 @@ def main(episodes=2000, plot_stats=False):
         model_path_without_ext = os.path.splitext(model_path)[0]
         stats_plot_path = f"{model_path_without_ext}_training_stats.png"
         plot_training_stats(stats, episodes, save_path=stats_plot_path)
+    
+    # Run evaluation if requested
+    if evaluate_after:
+        from scripts.evaluate import evaluate
+        model_dir = os.path.dirname(model_path)
+        evaluate_output_dir = os.path.join(model_dir, f"evaluation/{game_objects['observation_model'].name}")
+        os.makedirs(evaluate_output_dir, exist_ok=True)
+        
+        print(f"\nRunning evaluation and saving results to: {evaluate_output_dir}")
+        evaluate(num_episodes=1000, single_strategy="DQNStrategy", output_path=evaluate_output_dir)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train DQN agent.")
     parser.add_argument("--episodes", type=int, default=2000, help="Number of episodes to run (default: 2000)")
     parser.add_argument("--plot", action="store_true", help="Collect statistics and generate plots at the end")
+    parser.add_argument("--evaluate", action="store_true", help="Run evaluation after training and save to models directory")
     args = parser.parse_args()
 
-    main(episodes=args.episodes, plot_stats=args.plot)
+    main(episodes=args.episodes, plot_stats=args.plot, evaluate_after=args.evaluate)

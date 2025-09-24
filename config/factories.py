@@ -23,13 +23,17 @@ def create_observation_model(model_type: str, params: dict):
     from core.observation import (
         ThreatLevelObservation, 
         BayesianMeanObservation,
-        TurnAwareThreatObservation
+        BayesianAbstentionObservation,
+        TurnAwareThreatObservation,
+        SimpleObservation
     )
     
     model_classes = {
         "ThreatLevelObservation": ThreatLevelObservation,
         "BayesianMeanObservation": BayesianMeanObservation,
+        "BayesianAbstentionObservation": BayesianAbstentionObservation,
         "TurnAwareThreatObservation": TurnAwareThreatObservation,
+        "SimpleObservation": SimpleObservation,
     }
     
     if model_type not in model_classes:
@@ -135,13 +139,13 @@ def get_model_path(num_players: int, gameplay_type: str, observation_model_type:
     """Generate model path based on configuration"""
     # Create a temporary observation model to get its name
     obs_model = create_observation_model(observation_model_type, observation_params)
-    return f"dqn_marl/models/{num_players}_{gameplay_type}_{obs_model.name}.pth"
+    return f"dqn_marl/models/{num_players}/{gameplay_type}/{obs_model.name}.pth"
 
 def get_ppo_model_path(num_players: int, gameplay_type: str, observation_model_type: str, observation_params: dict):
     """Generate PPO model path based on configuration"""
     # Create a temporary observation model to get its name
     obs_model = create_observation_model(observation_model_type, observation_params)
-    return f"ppo_marl/models/{num_players}_{gameplay_type}_{obs_model.name}.pth"
+    return f"ppo_marl/models/{num_players}/{gameplay_type}/{obs_model.name}.pth"
 
 
 # Convenience function to get all configured objects at once

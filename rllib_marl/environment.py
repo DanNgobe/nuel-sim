@@ -5,10 +5,10 @@ from core.observation import ThreatLevelObservation
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from core.game_manager import GameManager as BaseGameManager
 
-class GameManager(MultiAgentEnv, BaseGameManager):
+class GameManager(BaseGameManager, MultiAgentEnv):
     def __init__(self, **kwargs):
-        MultiAgentEnv.__init__(self)
         BaseGameManager.__init__(self, **kwargs)
+        MultiAgentEnv.__init__(self)
 
     def reset(self, *, seed=None, options=None):
         MultiAgentEnv.reset(self, seed=seed, options=options)  # now explicit
@@ -25,4 +25,5 @@ def NuelMultiAgentEnv(config):
         strategies=[],  # Empty for RL training
         assigned_accuracies=config.get("assigned_accuracies", []),
         has_ghost=config.get("has_ghost", False),
+        capture_all_terminate=config.get("capture_all_terminate", False)
     )

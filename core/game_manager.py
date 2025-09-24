@@ -22,8 +22,9 @@ class GameManager():
                  assigned_accuracies: Optional[List[float]] = None,
                  has_ghost: bool = False,
                  screen_width: int = 800,
-                 screen_height: int = 600):
-        
+                 screen_height: int = 600,
+                 capture_all_terminate: bool = True):
+
         # Game parameters
         self.num_players = num_players
         self.gameplay = gameplay
@@ -34,6 +35,7 @@ class GameManager():
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.assigned_accuracies = assigned_accuracies or []
+        self.capture_all_terminate = capture_all_terminate
         
         # Initialize strategies
         if strategies is None:
@@ -201,7 +203,7 @@ class GameManager():
         # Get observations, rewards, and done flags
         observations = {}
         rewards = {}
-        terminateds = {player.id: not player.alive for player in self.current_game.players}
+        terminateds = {player.id: not player.alive for player in self.current_game.players} if self.capture_all_terminate else {}
         truncateds = {}
         infos = {}
         
@@ -211,7 +213,7 @@ class GameManager():
         
         # Calculate rewards and done flags based on previous and current states
         for shooter, target, hit in shots:
-            if hit:
+            if hit and self.capture_all_terminate:
                 terminateds[target.id] = True
 
             if shooter.alive: # Survival reward

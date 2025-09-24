@@ -34,6 +34,7 @@ def get_env_config():
         "strategies": [],  # Empty for RL training
         "assigned_accuracies": getattr(config, 'ASSIGNED_ACCURACIES', []),
         "has_ghost": config.HAS_GHOST,
+        "capture_all_terminate": False
     }
 
 def get_dqn_config():
@@ -99,6 +100,9 @@ def get_ppo_config():
             policies_to_train=["shared_policy"],
         )
         .env_runners(
+            # ↓↓↓ Use 0 remote workers to avoid overhead (runs on local CPU/GPU)
+            num_env_runners=0,
+            # ↓↓↓ Minimize environments to reduce total samples collected per step
             num_envs_per_env_runner=1,
             # Add episode handling configuration
             rollout_fragment_length="auto",
@@ -112,5 +116,5 @@ def get_ppo_config():
             gamma=0.99,
             lr=5e-4,
             train_batch_size=4000
-        )
+        ).resources(num_gpus=0, num_cpus_for_main_process=1)
     )
