@@ -2,16 +2,17 @@
 import torch
 import torch.nn.functional as F
 from torch.distributions import Categorical
-from ppo_marl.network import ActorCriticNetwork
+from ppo_marl.network import ActorCriticLSTMNetwork
 import ppo_marl.settings as settings
 import numpy as np
 
 class SharedPPOAgent:
     def __init__(self, observation_dim, action_dim, model_path=None):
-        self.network = ActorCriticNetwork(observation_dim, action_dim, settings.HIDDEN_SIZE).to(settings.DEVICE)
+        self.network = ActorCriticLSTMNetwork(observation_dim, action_dim, settings.HIDDEN_SIZE, settings.LSTM_LAYERS).to(settings.DEVICE)
         self.optimizer = torch.optim.Adam(self.network.parameters(), lr=settings.LEARNING_RATE)
         self.action_dim = action_dim
         self.observation_dim = observation_dim
+        self.hidden_state = None
 
         if model_path:
             self.network.load_state_dict(torch.load(model_path, map_location=settings.DEVICE))
@@ -21,7 +22,7 @@ class SharedPPOAgent:
             obs = torch.tensor(obs, dtype=torch.float32, device=settings.DEVICE).unsqueeze(0)
 
         with torch.no_grad():
-            action_logits, value = self.network(obs)
+            action_logits, value, self.hidden_state = self.network(obs, self.hidden_state)
             
         if explore:
             dist = Categorical(logits=action_logits)
@@ -57,7 +58,7 @@ class SharedPPOAgent:
         
         # Compute next values for GAE
         with torch.no_grad():
-            _, next_values = self.network(next_states)
+            _, next_values, _ = self.network(next_states)
             next_values = next_values.squeeze()
         
         # Compute advantages and returns
@@ -70,7 +71,7 @@ class SharedPPOAgent:
         # PPO update for multiple epochs
         for _ in range(settings.PPO_EPOCHS):
             # Get current policy and value predictions
-            action_logits, current_values = self.network(states)
+            action_logits, current_values, _ = self.network(states)
             current_values = current_values.squeeze()
             
             # Calculate policy loss
@@ -98,6 +99,10 @@ class SharedPPOAgent:
             torch.nn.utils.clip_grad_norm_(self.network.parameters(), max_norm=0.5)
             self.optimizer.step()
 
+    def reset_hidden_state(self):
+        """Reset LSTM hidden state"""
+        self.hidden_state = None
+    
     def save_model(self, path):
         """Save the network"""
         torch.save(self.network.state_dict(), path)

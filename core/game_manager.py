@@ -221,7 +221,7 @@ class GameManager():
 
             # Negative reward for shooting dead players (except ghosts)
             if target and not self.prev_alive_state.get(target.id, True) and target.name != "Ghost":
-                rewards[shooter.id] -= 10.0
+                rewards[shooter.id] -= 1000.0
 
             if game_over:
                 alive_players = self.current_game.get_alive_players()

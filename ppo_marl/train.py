@@ -162,6 +162,9 @@ def main(episodes=2000, plot_stats=False, evaluate_after=False):
     for episode in range(episodes):
         observations, infos = game_manager.reset()
         
+        # Reset LSTM hidden state at the beginning of each episode
+        agent.reset_hidden_state()
+        
         prev_observations = {}
         prev_actions = {}
         prev_log_probs = {}

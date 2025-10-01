@@ -55,7 +55,7 @@ class BayesianAbstentionObservation(ObservationModel):
         obs = [
             player.accuracy, 
             self.global_beliefs[player.id]['mean'],
-            self.shot_counts[player.id] / 100.0
+            self.shot_counts[player.id]
         ]
         
         others = [p for p in players if (p != player and p.name != "Ghost")]
@@ -64,7 +64,7 @@ class BayesianAbstentionObservation(ObservationModel):
         for p in others:
             if p.alive:
                 obs.append(self.global_beliefs[p.id]['mean'])
-                obs.append(self.shot_counts[p.id] / 100.0)
+                obs.append(self.shot_counts[p.id])
             else:
                 obs.append(0.0)
                 obs.append(0.0)

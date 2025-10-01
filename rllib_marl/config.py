@@ -15,6 +15,7 @@ from ray.tune.registry import register_env
 from rllib_marl.environment import NuelMultiAgentEnv
 from pprint import pprint
 import argparse
+from ray.rllib.core.rl_module.default_model_config import DefaultModelConfig
 
 # Import your custom modules
 import config.settings as config
@@ -110,11 +111,19 @@ def get_ppo_config():
         .rl_module(
             rl_module_spec=MultiRLModuleSpec(rl_module_specs={
                 "shared_policy": RLModuleSpec(),
-            })
+            }),
+            model_config=DefaultModelConfig(
+                fcnet_hiddens=[128, 128],
+                use_lstm=True,
+                max_seq_len=20,
+                lstm_use_prev_action=False,
+                lstm_use_prev_reward=False,
+            ),
         )
         .training(
             gamma=0.99,
             lr=5e-4,
             train_batch_size=4000
-        ).resources(num_gpus=0, num_cpus_for_main_process=1)
+        )
+        # .resources(num_gpus=0, num_cpus_for_main_process=1)
     )

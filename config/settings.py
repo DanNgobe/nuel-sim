@@ -26,7 +26,7 @@ MARKSMANSHIP_RANGE = (0.3, 0.9)
 
 # Strategy Configuration (string identifiers)
 # Available options: "TargetStrongest", "TargetWeaker", "TargetStronger", "TargetRandom", "TargetNearest", "RLlibStrategy", "DQNStrategy", "PPOStrategy"
-ASSIGNED_STRATEGY_TYPES = ["RLlibStrategy"] * NUM_PLAYERS
+ASSIGNED_STRATEGY_TYPES = ["PPOStrategy"] * NUM_PLAYERS
 ASSIGNED_ACCURACIES = []
 
 # RLlib Strategy Configuration

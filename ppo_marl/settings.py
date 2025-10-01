@@ -9,6 +9,7 @@ ENTROPY_COEFF = 0.01
 BATCH_SIZE = 64
 MEMORY_SIZE = 2048
 HIDDEN_SIZE = 128
+LSTM_LAYERS = 1
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 PPO_EPOCHS = 4
 GAE_LAMBDA = 0.95
