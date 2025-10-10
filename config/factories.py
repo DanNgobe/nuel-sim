@@ -25,7 +25,8 @@ def create_observation_model(model_type: str, params: dict):
         BayesianMeanObservation,
         BayesianAbstentionObservation,
         TurnAwareThreatObservation,
-        SimpleObservation
+        SimpleObservation,
+        NoInfoObservation
     )
     
     model_classes = {
@@ -34,6 +35,7 @@ def create_observation_model(model_type: str, params: dict):
         "BayesianAbstentionObservation": BayesianAbstentionObservation,
         "TurnAwareThreatObservation": TurnAwareThreatObservation,
         "SimpleObservation": SimpleObservation,
+        "NoInfoObservation": NoInfoObservation,
     }
     
     if model_type not in model_classes:

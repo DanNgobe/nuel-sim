@@ -5,3 +5,4 @@ from .observation_model import NullObservationModel
 from .observation_model import ObservationModel
 from .turn_aware_threat_observation import TurnAwareThreatObservation
 from .simple_observation import SimpleObservation
+from .no_info_observation import NoInfoObservation

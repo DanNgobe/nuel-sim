@@ -1,8 +1,9 @@
 # dqn_marl/train.py
 from core.game_manager import GameManager
-from dqn_marl.replay_buffer import ReplayBuffer
+from dqn_marl.replay_buffer import PrioritizedReplayBuffer
 from dqn_marl.strategy import DQNStrategy
-from dqn_marl.settings import MEMORY_SIZE, get_model_path, BATCH_SIZE, TARGET_UPDATE_FREQUENCY
+from dqn_marl.settings import (MEMORY_SIZE, get_model_path, BATCH_SIZE, TARGET_UPDATE_FREQUENCY, 
+                              PRIORITY_ALPHA, PRIORITY_BETA, PRIORITY_BETA_INCREMENT)
 from config.factories import create_game_objects
 import config
 import torch
@@ -128,9 +129,15 @@ def main(episodes=2000, plot_stats=False, evaluate_after=False):
     # All players use the same DQN strategy (shared agent)
     dqn_strategies = [dqn_strategy for _ in range(config.NUM_PLAYERS)]
     
-    # Single shared agent and replay buffer
+    # Single shared agent and prioritized replay buffer
     agent = dqn_strategy.get_agent()
-    replay_buffer = ReplayBuffer(MEMORY_SIZE)
+    replay_buffer = PrioritizedReplayBuffer(
+        capacity=MEMORY_SIZE,
+        alpha=PRIORITY_ALPHA,
+        beta=PRIORITY_BETA,
+        beta_increment=PRIORITY_BETA_INCREMENT
+    )
+    print(f"Using Prioritized Experience Replay (alpha={PRIORITY_ALPHA}, beta={PRIORITY_BETA})")
     
     # Create GameManager with DQN strategies
     game_manager = GameManager(

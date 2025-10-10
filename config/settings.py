@@ -4,21 +4,21 @@
 
 # Game Settings
 NUM_PLAYERS = 3
-NUM_ROUNDS = None  # None for infinite
+NUM_ROUNDS = 20  # None for infinite
 RUN_MODE = "visualize"  # "visualize", or "single"
 
 # Gameplay Configuration
 # Available options: "SequentialGamePlay", "RandomGamePlay", "SimultaneousGamePlay"
-GAME_PLAY_TYPE = "RandomGamePlay"
+GAME_PLAY_TYPE = "SequentialGamePlay"
 HAS_GHOST = False
 
 # Observation Model Configuration
-# Available options: "ThreatLevelObservation", "BayesianMeanObservation", "BayesianAbstentionObservation", "TurnAwareThreatObservation", "SimpleObservation"
-OBSERVATION_MODEL_TYPE = "ThreatLevelObservation"
+# Available options: "ThreatLevelObservation", "BayesianMeanObservation", "BayesianAbstentionObservation", "TurnAwareThreatObservation", "SimpleObservation", "NoInfoObservation"
+OBSERVATION_MODEL_TYPE = "SimpleObservation"
 OBSERVATION_MODEL_PARAMS = {
     "num_players": NUM_PLAYERS,
     "has_ghost": HAS_GHOST,
-    # "setup_shots": 5,
+    # "setup_shots": 0,
 }
 
 # Player Settings
