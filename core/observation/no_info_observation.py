@@ -15,10 +15,10 @@ class NoInfoObservation(ObservationModel):
         pass
 
     def create_observation(self, player, players):
-        return [0.0] * self.get_observation_dim()
+        return [player.accuracy]
 
     def get_observation_dim(self):
-        return self.num_players - 1
+        return 1
 
     def get_action_dim(self):
         return (self.num_players - 1) + (1 if self.has_ghost else 0)

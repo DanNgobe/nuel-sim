@@ -1,6 +1,6 @@
 from core.game_manager import GameManager
 from core.gameplay import SimultaneousGamePlay
-from core.observation import ThreatLevelObservation
+from core.observation import SimpleObservation
 
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from core.game_manager import GameManager as BaseGameManager
@@ -19,7 +19,7 @@ def NuelMultiAgentEnv(config):
     return GameManager(
         num_players=config.get("num_players", 3),
         gameplay=config.get("gameplay", SimultaneousGamePlay()),
-        observation_model=config.get("observation_model", ThreatLevelObservation(3)),
+        observation_model=config.get("observation_model", SimpleObservation(3)),
         max_rounds=config.get("max_rounds", None),
         marksmanship_range=config.get("marksmanship_range", (0.3, 0.9)),
         strategies=[],  # Empty for RL training

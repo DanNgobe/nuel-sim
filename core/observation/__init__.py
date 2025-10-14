@@ -1,4 +1,4 @@
-from .threat_level_observation import ThreatLevelObservation
+from .sorted_observation import SortedObservation
 from .bayesian_mean_observation import BayesianMeanObservation
 from .bayesian_abstention_observation import BayesianAbstentionObservation
 from .observation_model import NullObservationModel

@@ -1,6 +1,6 @@
-from .threat_level_observation import ThreatLevelObservation
+from .simple_observation import SimpleObservation
 
-class TurnAwareThreatObservation(ThreatLevelObservation):
+class TurnAwareThreatObservation(SimpleObservation):
     def __init__(self, num_players, has_ghost=False):
         # Call parent constructor which handles singleton initialization
         super().__init__(num_players, has_ghost)

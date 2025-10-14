@@ -21,7 +21,7 @@ def create_gameplay(gameplay_type: str):
 def create_observation_model(model_type: str, params: dict):
     """Factory function to create observation model objects from string identifiers"""
     from core.observation import (
-        ThreatLevelObservation, 
+        SortedObservation, 
         BayesianMeanObservation,
         BayesianAbstentionObservation,
         TurnAwareThreatObservation,
@@ -30,7 +30,7 @@ def create_observation_model(model_type: str, params: dict):
     )
     
     model_classes = {
-        "ThreatLevelObservation": ThreatLevelObservation,
+        "SortedObservation": SortedObservation,
         "BayesianMeanObservation": BayesianMeanObservation,
         "BayesianAbstentionObservation": BayesianAbstentionObservation,
         "TurnAwareThreatObservation": TurnAwareThreatObservation,

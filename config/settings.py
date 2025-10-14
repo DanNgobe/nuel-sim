@@ -3,22 +3,22 @@
 # Use string identifiers that will be resolved by factories at runtime
 
 # Game Settings
-NUM_PLAYERS = 3
+NUM_PLAYERS = 5
 NUM_ROUNDS = 20  # None for infinite
 RUN_MODE = "visualize"  # "visualize", or "single"
 
 # Gameplay Configuration
 # Available options: "SequentialGamePlay", "RandomGamePlay", "SimultaneousGamePlay"
-GAME_PLAY_TYPE = "SequentialGamePlay"
-HAS_GHOST = False
+GAME_PLAY_TYPE = "SimultaneousGamePlay"
+HAS_GHOST = True
 
 # Observation Model Configuration
-# Available options: "ThreatLevelObservation", "BayesianMeanObservation", "BayesianAbstentionObservation", "TurnAwareThreatObservation", "SimpleObservation", "NoInfoObservation"
-OBSERVATION_MODEL_TYPE = "SimpleObservation"
+# Available options: "SortedObservation", "BayesianMeanObservation", "BayesianAbstentionObservation", "TurnAwareThreatObservation", "SimpleObservation", "NoInfoObservation"
+OBSERVATION_MODEL_TYPE = "BayesianAbstentionObservation"
 OBSERVATION_MODEL_PARAMS = {
     "num_players": NUM_PLAYERS,
     "has_ghost": HAS_GHOST,
-    # "setup_shots": 0,
+    "setup_shots": 0,
 }
 
 # Player Settings

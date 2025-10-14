@@ -33,5 +33,9 @@ class SimpleObservation(ObservationModel):
 
     def get_targets(self, player, players):
         others = [p for p in players if p != player]
-        others.sort(key=lambda p: p.id)        
+
+        # Sort by threat level: alive * accuracy, with ghosts at the end
+        others.sort(key=lambda p: (
+            (p.accuracy if p.alive else 0.0) if p.name != "Ghost" else -1.0
+        ), reverse=True)
         return others
