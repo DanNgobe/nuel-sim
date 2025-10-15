@@ -4,10 +4,10 @@ class PolicyNetwork(nn.Module):
     def __init__(self, input_dim, output_dim, hidden_size):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(input_dim, output_dim),
-            nn.LayerNorm(hidden_size),  # Better than BatchNorm for RL
+            nn.Linear(input_dim, hidden_size),
+            nn.LayerNorm(hidden_size),
             nn.ReLU(),
-            nn.Dropout(0.2),  # Increased dropout rate to reduce overfitting
+            nn.Dropout(0.2),
             nn.Linear(hidden_size, output_dim)
         )
 

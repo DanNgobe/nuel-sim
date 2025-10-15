@@ -40,8 +40,7 @@ class SharedAgent:
         if len(replay_buffer) < settings.BATCH_SIZE:
             return
 
-        states, actions, rewards, next_states, dones, idxs, is_weights = replay_buffer.sample(settings.BATCH_SIZE)
-        is_weights = torch.tensor(is_weights, dtype=torch.float32, device=settings.DEVICE)
+        states, actions, rewards, next_states, dones = replay_buffer.sample(settings.BATCH_SIZE)
 
         states = torch.tensor(np.array(states), dtype=torch.float32, device=settings.DEVICE)
         actions = torch.tensor(actions, dtype=torch.long, device=settings.DEVICE)
@@ -60,12 +59,8 @@ class SharedAgent:
             next_q_values = self.target_net(next_states).gather(1, next_actions).squeeze(1)
         
         expected_q = rewards + settings.GAMMA * next_q_values * (1 - dones)
-        
-        # Calculate TD errors for priority updates
-        td_errors = (q_values - expected_q).detach().cpu().numpy()
 
-        # Weighted loss using importance sampling weights
-        loss = (is_weights * F.mse_loss(q_values, expected_q, reduction='none')).mean()
+        loss = F.mse_loss(q_values, expected_q)
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -73,9 +68,6 @@ class SharedAgent:
         # Gradient clipping to prevent exploding gradients
         torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.0)
         self.optimizer.step()
-        
-        # Update priorities
-        replay_buffer.update_priorities(idxs, td_errors)
 
     def update_target_network(self):
         """Update target network with policy network weights"""
