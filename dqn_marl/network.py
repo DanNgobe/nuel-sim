@@ -7,7 +7,7 @@ class PolicyNetwork(nn.Module):
             nn.Linear(input_dim, hidden_size),
             nn.LayerNorm(hidden_size),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.05),
             nn.Linear(hidden_size, output_dim)
         )
 

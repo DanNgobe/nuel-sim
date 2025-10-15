@@ -269,9 +269,13 @@ def main(episodes=2000, plot_stats=False, evaluate_after=False):
         # Update epsilon for shared agent
         agent.decay_epsilon(episode, episodes)
         
+        # Step learning rate scheduler at appropriate intervals
+        agent.step_scheduler_if_needed(episode)
+        
         # Print progress
         if (episode + 1) % 100 == 0:
-            print(f"Episode {episode + 1}/{episodes} , Epsilon: {agent.epsilon:.3f}")
+            current_lr = agent.get_current_lr()
+            print(f"Episode {episode + 1}/{episodes} , Epsilon: {agent.epsilon:.3f}, LR: {current_lr:.6f}")
             if plot_stats and len(stats['episode_lengths']) > 0:
                 recent_avg_length = np.mean(stats['episode_lengths'][-100:])
                 recent_avg_reward = np.mean(stats['average_rewards'][-100:])

@@ -216,12 +216,12 @@ class GameManager():
             if hit and self.capture_all_terminate:
                 terminateds[target.id] = True
 
-            if shooter.alive: # Survival reward
-                rewards[shooter.id] += 1.0
+            # if shooter.alive: # Survival reward
+            #     rewards[shooter.id] += 1.0
 
             # Negative reward for shooting dead players (except ghosts)
             if target and not self.prev_alive_state.get(target.id, True) and target.name != "Ghost":
-                rewards[shooter.id] -= 1000.0
+                rewards[shooter.id] -= 10.0
 
             if game_over:
                 alive_players = self.current_game.get_alive_players()

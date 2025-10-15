@@ -18,6 +18,14 @@ class SharedAgent:
         self.target_net = PolicyNetwork(observation_dim, action_dim, settings.HIDDEN_SIZE).to(settings.DEVICE)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.optimizer = torch.optim.Adam(self.policy_net.parameters(), lr=settings.LEARNING_RATE)
+        
+        # Learning rate scheduler
+        self.scheduler = torch.optim.lr_scheduler.StepLR(
+            self.optimizer, 
+            step_size=settings.LR_SCHEDULER_STEP,
+            gamma=settings.LR_SCHEDULER_GAMMA
+        )
+        
         self.epsilon = settings.EPSILON_START
         self.action_dim = action_dim
         self.observation_dim = observation_dim
@@ -68,15 +76,34 @@ class SharedAgent:
         # Gradient clipping to prevent exploding gradients
         torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.0)
         self.optimizer.step()
+        
+        # Step scheduler after optimizer (but check step_size to avoid calling every update)
+        self._update_count = getattr(self, '_update_count', 0) + 1
 
     def update_target_network(self):
         """Update target network with policy network weights"""
         self.target_net.load_state_dict(self.policy_net.state_dict())
     
     def decay_epsilon(self, episode, total_episodes=25000):
-        # Linear decay: gradually decrease epsilon from START to END over total_episodes
-        decay_rate = (settings.EPSILON_START - settings.EPSILON_END) / (total_episodes * 0.25)
+        # Linear decay: gradually decrease epsilon from START to END over 50% of total_episodes
+        decay_rate = (settings.EPSILON_START - settings.EPSILON_END) / (total_episodes * 0.5)
         self.epsilon = max(settings.EPSILON_END, settings.EPSILON_START - decay_rate * episode)
+    
+    def step_scheduler_if_needed(self, episode):
+        """Step the learning rate scheduler at episode boundaries"""
+        # Only step at episode boundaries, aligned with LR_SCHEDULER_STEP
+        if episode > 0 and episode % settings.LR_SCHEDULER_STEP == 0:
+            current_lr = self.optimizer.param_groups[0]['lr']
+            if current_lr > settings.MIN_LEARNING_RATE:
+                self.scheduler.step()
+                # Ensure we don't go below minimum
+                new_lr = max(self.optimizer.param_groups[0]['lr'], settings.MIN_LEARNING_RATE)
+                for param_group in self.optimizer.param_groups:
+                    param_group['lr'] = new_lr
+    
+    def get_current_lr(self):
+        """Get current learning rate"""
+        return self.optimizer.param_groups[0]['lr']
 
     def save_model(self, path):
         """Save the policy network"""
