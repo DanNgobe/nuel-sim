@@ -6,8 +6,8 @@ import suppress_warnings
 suppress_warnings.suppress_ray_warnings()
 
 import ray
-from ray.rllib.algorithms.dqn import DQNConfig
 from ray.rllib.algorithms.ppo import PPOConfig
+from ray.rllib.algorithms.dqn import DQNConfig
 from ray.rllib.policy.policy import PolicySpec
 from ray.rllib.core.rl_module.multi_rl_module import MultiRLModuleSpec
 from ray.rllib.core.rl_module.rl_module import RLModuleSpec
@@ -38,60 +38,13 @@ def get_env_config():
         "capture_all_terminate": False
     }
 
-def get_dqn_config():
-    """Get DQN configuration for shared policy"""
-    env_config = get_env_config()
-    
-    return (
-        DQNConfig()
-        .api_stack(
-            enable_rl_module_and_learner=True,
-            enable_env_runner_and_connector_v2=True
-        )
-        .environment("nuel_env", env_config=env_config)
-        .multi_agent(
-            policies={"shared_policy"},
-            policy_mapping_fn=lambda agent_id, episode, **kwargs: "shared_policy",
-            policies_to_train=["shared_policy"],
-        ).env_runners(
-            num_envs_per_env_runner=1,
-            # Add episode handling configuration
-            rollout_fragment_length="auto",
-        )
-        .rl_module(
-            rl_module_spec=MultiRLModuleSpec(rl_module_specs={
-                "shared_policy": RLModuleSpec(),
-            })
-        )
-        .training(
-            train_batch_size_per_learner=4000,
-            lr=1e-4,
-            gamma=0.99,
-            model={
-                "fcnet_hiddens": [256, 256],
-                "fcnet_activation": "relu",
-            },
-            # DQN-specific settings
-            replay_buffer_config={
-                "type": "MultiAgentReplayBuffer",
-                "capacity": 100000,
-                "alpha": 0.6,
-                "beta": 0.4,
-            },
-            num_steps_sampled_before_learning_starts=1000,
-            target_network_update_freq=1000,
-            n_step=3,
-            double_q=True,
-            dueling=True,
-        )
-    )
-
 def get_ppo_config():
     """Get PPO configuration for shared policy"""
     env_config = get_env_config()
     
     return (
         PPOConfig()
+        .framework("torch")
         .api_stack(enable_rl_module_and_learner=True,
                    enable_env_runner_and_connector_v2=True)
         .environment("nuel_env", env_config=env_config)
@@ -114,16 +67,43 @@ def get_ppo_config():
             }),
             model_config=DefaultModelConfig(
                 fcnet_hiddens=[128, 128],
-                use_lstm=True,
-                max_seq_len=20,
-                lstm_use_prev_action=False,
-                lstm_use_prev_reward=False,
+                use_lstm=False,  # Disabled LSTM to fix indexing issue
             ),
         )
         .training(
-            gamma=0.99,
-            lr=5e-4,
-            train_batch_size=4000
+            gamma=0.98,
+            train_batch_size=256
         )
         # .resources(num_gpus=0, num_cpus_for_main_process=1)
+    )
+
+def get_dqn_config():
+    env_config = get_env_config()
+
+    return (
+        DQNConfig()
+        .framework("torch")
+        .api_stack(enable_rl_module_and_learner=True,
+                   enable_env_runner_and_connector_v2=True)
+        .environment("nuel_env", env_config=env_config)
+        .multi_agent(
+            policies={"shared_policy"},
+            policy_mapping_fn=lambda agent_id, episode, **kwargs: "shared_policy",
+            policies_to_train=["shared_policy"],
+        )
+        .rl_module(
+            rl_module_spec=MultiRLModuleSpec(rl_module_specs={
+                "shared_policy": RLModuleSpec(),
+            })
+        )
+        .training(
+            gamma=0.98,
+            lr=0.0005,
+            train_batch_size=256,
+            target_network_update_freq=500,
+            replay_buffer_config={
+                "type": "MultiAgentReplayBuffer",
+                "capacity": 50000,
+            }
+        )
     )

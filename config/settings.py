@@ -3,30 +3,30 @@
 # Use string identifiers that will be resolved by factories at runtime
 
 # Game Settings
-NUM_PLAYERS = 5
+NUM_PLAYERS = 3
 NUM_ROUNDS = 20  # None for infinite
 RUN_MODE = "visualize"  # "visualize", or "single"
 
 # Gameplay Configuration
 # Available options: "SequentialGamePlay", "RandomGamePlay", "SimultaneousGamePlay"
-GAME_PLAY_TYPE = "SimultaneousGamePlay"
+GAME_PLAY_TYPE = "SequentialGamePlay"
 HAS_GHOST = True
 
 # Observation Model Configuration
 # Available options: "SortedObservation", "BayesianMeanObservation", "BayesianAbstentionObservation", "TurnAwareThreatObservation", "SimpleObservation", "NoInfoObservation"
-OBSERVATION_MODEL_TYPE = "BayesianAbstentionObservation"
+OBSERVATION_MODEL_TYPE = "SimpleObservation"
 OBSERVATION_MODEL_PARAMS = {
     "num_players": NUM_PLAYERS,
     "has_ghost": HAS_GHOST,
-    "setup_shots": 0,
+    # "setup_shots": 0, # Comment out for non-Bayesian models
 }
 
 # Player Settings
-MARKSMANSHIP_RANGE = (0.3, 0.9)
+MARKSMANSHIP_RANGE = (0.1, 0.9)
 
 # Strategy Configuration (string identifiers)
-# Available options: "TargetStrongest", "TargetWeaker", "TargetStronger", "TargetRandom", "TargetNearest", "RLlibStrategy", "DQNStrategy", "PPOStrategy"
-ASSIGNED_STRATEGY_TYPES = ["PPOStrategy"] * NUM_PLAYERS
+# Available options: "TargetStrongest", "TargetWeaker", "TargetStronger", "TargetRandom", "TargetNearest", "RLlibStrategy"
+ASSIGNED_STRATEGY_TYPES = ["TargetWeaker"] * NUM_PLAYERS
 ASSIGNED_ACCURACIES = []
 
 # RLlib Strategy Configuration

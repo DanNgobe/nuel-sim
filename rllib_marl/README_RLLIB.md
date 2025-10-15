@@ -4,7 +4,7 @@ Fixed RLlib MARL implementation using GameManager as the environment.
 
 ## Quick Start
 
-### 1. Train DQN Agent
+### 1. Train DQN Agent (Default - Recommended)
 ```bash
 python rllib_marl/train.py --algorithm dqn --episodes 2000
 ```
@@ -14,7 +14,12 @@ python rllib_marl/train.py --algorithm dqn --episodes 2000
 python rllib_marl/train.py --algorithm ppo --episodes 2000
 ```
 
-### 3. Use Trained Model
+### 3. Train with Plotting and Evaluation
+```bash
+python rllib_marl/train.py --algorithm dqn --episodes 2000 --plot --evaluate
+```
+
+### 4. Use Trained Model
 ```python
 from rllib_marl.strategy import RLlibStrategy
 from core.observation import ThreatLevelObservation
@@ -34,9 +39,12 @@ players[0].strategy = strategy
 
 - **GameManager Integration**: Uses existing GameManager as MultiAgentEnv
 - **Shared Policy**: All players learn from the same policy
-- **Algorithm Support**: PPO, DQN with proper configurations
+- **Algorithm Support**: DQN (default), PPO - both optimized for discrete action spaces
 - **Observation Models**: Compatible with existing observation models
 - **Strategy Integration**: Trained models work as game strategies
+- **Training Visualization**: Plot episode rewards, lengths, and losses
+- **Evaluation Mode**: Run evaluation after training
+- **Experience Replay**: DQN uses prioritized replay buffer for better learning
 
 ## Architecture
 
@@ -53,6 +61,30 @@ Edit `rllib_marl/config.py` to modify:
 - Multi-agent policy mapping
 - Resource allocation
 
+## Command Line Arguments
+
+- `--algorithm {dqn,ppo}`: Choose algorithm (default: dqn)
+- `--episodes N`: Number of training iterations (default: 2000)
+- `--checkpoint-dir PATH`: Custom checkpoint directory
+- `--plot`: Generate training statistics plots
+- `--evaluate`: Run evaluation after training
+
+## Algorithm Comparison
+
+### DQN (Deep Q-Network) - **Recommended**
+- ✅ Designed specifically for discrete action spaces
+- ✅ Experience replay for sample efficiency
+- ✅ Epsilon-greedy exploration strategy
+- ✅ Target network for stable learning
+- 🎯 Best for games with discrete choices (like choosing which player to shoot)
+
+### PPO (Proximal Policy Optimization)
+- ✅ Works well with discrete actions
+- ✅ Stable and reliable training
+- ✅ Good for on-policy learning
+- 🎯 Alternative if DQN doesn't converge well
+
 ## Results Location
 
-Training results saved to: `rllib_marl/results/`
+- Training checkpoints: `rllib_marl/checkpoints/`
+- Training plots: `rllib_marl/checkpoints/training_stats.png` (when using --plot)

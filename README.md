@@ -43,12 +43,6 @@ python -m scripts.evaluate --episodes 1000
 ### Train Agents
 
 ```bash
-# DQN training
-python -m dqn_marl.train --episodes 5000 --plot --evaluate
-
-# PPO training
-python -m ppo_marl.train --episodes 5000 --plot --evaluate
-
 # Ray RLlib training
 python -m rllib_marl.train --algorithm ppo --episodes 2000
 ```
@@ -69,8 +63,6 @@ nuel-sim/
 │   ├── gameplay/         # Game modes
 │   ├── observation/      # ML observation models
 │   └── strategies.py     # Player strategies
-├── dqn_marl/             # DQN implementation
-├── ppo_marl/             # PPO implementation  
 ├── rllib_marl/           # Ray RLlib integration
 ├── visual/               # Pygame visualization
 ├── config/               # Configuration

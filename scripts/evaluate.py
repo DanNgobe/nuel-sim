@@ -119,10 +119,18 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
     heatmap_data = []
     for alive_count in sorted(round_stats.keys(), reverse=True):
         print(f"\nAlive players: {alive_count}")
-        header = "\t" + "\t".join([f"A{j}" for j in range(num_players)])
+        # Create column labels - replace last with "Abstain" if ghost exists
+        col_labels = [f"A{j}" for j in range(num_players)]
+        if config.HAS_GHOST:
+            col_labels[-1] = "Abstain"
+        header = "\t" + "\t".join(col_labels)
         print(header)
-        matrix = np.zeros((num_players, num_players), dtype=int)
-        for i in range(num_players):
+        
+        # Create matrix - exclude ghost row if it exists
+        matrix_size = num_players - 1 if config.HAS_GHOST else num_players
+        matrix = np.zeros((matrix_size, num_players), dtype=int)
+        
+        for i in range(matrix_size):
             row = [f"A{i}"]
             for j in range(num_players):
                 count = round_stats[alive_count][i].get(j, 0)
@@ -147,9 +155,18 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
         
         for idx, (alive_count, matrix) in enumerate(heatmap_data):
             ax = axes[idx] if num_heatmaps > 1 else axes[0]
+            
+            # Create labels - replace last column with "Abstain" if ghost exists
+            x_labels = [f"A{j}" for j in range(num_players)]
+            if config.HAS_GHOST:
+                x_labels[-1] = "Abstain"
+            
+            # Y labels exclude ghost row if it exists
+            matrix_rows = matrix.shape[0]
+            y_labels = [f"A{i}" for i in range(matrix_rows)]
+            
             sns.heatmap(matrix, annot=True, fmt="d", cmap="YlGnBu", cbar=False,
-                       xticklabels=[f"A{j}" for j in range(num_players)],
-                       yticklabels=[f"A{i}" for i in range(num_players)], ax=ax)
+                       xticklabels=x_labels, yticklabels=y_labels, ax=ax)
             ax.set_title(f"Shots (Alive: {alive_count})")
             ax.set_xlabel("Target Accuracy Rank")
             ax.set_ylabel("Shooter Accuracy Rank")

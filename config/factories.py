@@ -17,7 +17,6 @@ def create_gameplay(gameplay_type: str):
     
     return gameplay_classes[gameplay_type]()
 
-
 def create_observation_model(model_type: str, params: dict):
     """Factory function to create observation model objects from string identifiers"""
     from core.observation import (
@@ -68,54 +67,6 @@ def create_strategy(strategy_type: str, observation_model=None):
             checkpoint_path=settings.RLLIB_CHECKPOINT_PATH,
             observation_model=observation_model
         )
-    
-    if strategy_type == "DQNStrategy":
-        from dqn_marl.strategy import DQNStrategy
-        from . import settings    
-        
-        # Use passed observation model or create new one if none provided
-        if observation_model is None:
-            observation_model = create_observation_model(
-                settings.OBSERVATION_MODEL_TYPE, 
-                settings.OBSERVATION_MODEL_PARAMS
-            )
-        
-        model_path = get_model_path(
-            settings.NUM_PLAYERS,
-            settings.GAME_PLAY_TYPE, 
-            settings.OBSERVATION_MODEL_TYPE,
-            settings.OBSERVATION_MODEL_PARAMS
-        )
-                
-        return DQNStrategy(
-            observation_model=observation_model,
-            model_path=model_path,
-            explore=False  # Default to no exploration for evaluation
-        )
-    
-    if strategy_type == "PPOStrategy":
-        from ppo_marl.strategy import PPOStrategy
-        from . import settings    
-        
-        # Use passed observation model or create new one if none provided
-        if observation_model is None:
-            observation_model = create_observation_model(
-                settings.OBSERVATION_MODEL_TYPE, 
-                settings.OBSERVATION_MODEL_PARAMS
-            )
-        
-        model_path = get_ppo_model_path(
-            settings.NUM_PLAYERS,
-            settings.GAME_PLAY_TYPE, 
-            settings.OBSERVATION_MODEL_TYPE,
-            settings.OBSERVATION_MODEL_PARAMS
-        )
-                
-        return PPOStrategy(
-            observation_model=observation_model,
-            model_path=model_path,
-            explore=False  # Default to no exploration for evaluation
-        )
 
     strategy_classes = {
         "TargetStrongest": TargetStrongest,
@@ -123,7 +74,6 @@ def create_strategy(strategy_type: str, observation_model=None):
         "TargetStronger": TargetStronger,
         "TargetRandom": TargetRandom,
         "TargetNearest": TargetNearest,
-        "PPOStrategy": None,  # Handled above
     }
     
     if strategy_type not in strategy_classes:
@@ -136,20 +86,6 @@ def create_strategies_list(strategy_types: list, observation_model=None):
     """Factory function to create a list of strategy objects"""
     return [create_strategy(strategy_type, observation_model) for strategy_type in strategy_types]
 
-
-def get_model_path(num_players: int, gameplay_type: str, observation_model_type: str, observation_params: dict):
-    """Generate model path based on configuration"""
-    # Create a temporary observation model to get its name
-    obs_model = create_observation_model(observation_model_type, observation_params)
-    return f"dqn_marl/models/{num_players}/{gameplay_type}/{obs_model.name}.pth"
-
-def get_ppo_model_path(num_players: int, gameplay_type: str, observation_model_type: str, observation_params: dict):
-    """Generate PPO model path based on configuration"""
-    # Create a temporary observation model to get its name
-    obs_model = create_observation_model(observation_model_type, observation_params)
-    return f"ppo_marl/models/{num_players}/{gameplay_type}/{obs_model.name}.pth"
-
-
 # Convenience function to get all configured objects at once
 def create_game_objects():
     """Create all game objects based on current configuration"""
@@ -161,16 +97,9 @@ def create_game_objects():
         settings.OBSERVATION_MODEL_PARAMS
     )
     strategies = create_strategies_list(settings.ASSIGNED_STRATEGY_TYPES, observation_model)
-    model_path = get_model_path(
-        settings.NUM_PLAYERS,
-        settings.GAME_PLAY_TYPE, 
-        settings.OBSERVATION_MODEL_TYPE,
-        settings.OBSERVATION_MODEL_PARAMS
-    )
     
     return {
         'gameplay': gameplay,
         'observation_model': observation_model,
-        'strategies': strategies,
-        'model_path': model_path
+        'strategies': strategies
     }
