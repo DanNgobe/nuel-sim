@@ -14,7 +14,7 @@ HAS_GHOST = True
 
 # Observation Model Configuration
 # Available options: "SortedObservation", "BayesianMeanObservation", "BayesianAbstentionObservation", "TurnAwareThreatObservation", "SimpleObservation", "NoInfoObservation"
-OBSERVATION_MODEL_TYPE = "BayesianAbstentionObservation"
+OBSERVATION_MODEL_TYPE = "SimpleObservation"
 OBSERVATION_MODEL_PARAMS = {
     "num_players": NUM_PLAYERS,
     "has_ghost": HAS_GHOST,
@@ -26,7 +26,7 @@ MARKSMANSHIP_RANGE = (0.1, 0.9)
 
 # Strategy Configuration (string identifiers)
 # Available options: "TargetStrongest", "TargetWeaker", "TargetStronger", "TargetRandom", "TargetNearest", "RLlibStrategy", "DQNStrategy", "PPOStrategy"
-ASSIGNED_STRATEGY_TYPES = ["PPOStrategy"] * NUM_PLAYERS
+ASSIGNED_STRATEGY_TYPES = ["DQNStrategy"] * NUM_PLAYERS
 ASSIGNED_ACCURACIES = []
 
 # RLlib Strategy Configuration

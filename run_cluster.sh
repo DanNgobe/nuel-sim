@@ -8,5 +8,6 @@
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate myenv
 
-# Run the training script
+# Run the training script (headless mode for cluster)
+export DISPLAY=
 python -m dqn_marl.train --episodes 5000 --plot --evaluate
