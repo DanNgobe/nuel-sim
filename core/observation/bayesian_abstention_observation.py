@@ -62,9 +62,10 @@ class BayesianAbstentionObservation(ObservationModel):
 
         for p in others:
             obs.append(self.global_beliefs[p.id]['mean'] if p.alive else 0.0)
-        
-        for p in others:
-            obs.append(self.shot_counts[p.id] if p.alive else 0.0)
+            # Compute variance of the Beta distribution
+            belief = self.global_beliefs[p.id]
+            variance = (belief['alpha'] * belief['beta']) / ((belief['alpha'] + belief['beta'])**2 * (belief['alpha'] + belief['beta'] + 1))
+            obs.append(variance if p.alive else 0.0)
         
         return obs
 

@@ -49,7 +49,8 @@ def create_strategy(strategy_type: str, observation_model=None):
         TargetWeaker, 
         TargetStronger, 
         TargetRandom, 
-        TargetNearest
+        TargetNearest,
+        TargetBelievedStrongest
     )
     
     if strategy_type == "RLlibStrategy":
@@ -67,6 +68,16 @@ def create_strategy(strategy_type: str, observation_model=None):
             checkpoint_path=settings.RLLIB_CHECKPOINT_PATH,
             observation_model=observation_model
         )
+
+    # Handle strategies that need observation model
+    if strategy_type == "TargetBelievedStrongest":
+        if observation_model is None:
+            from . import settings
+            observation_model = create_observation_model(
+                settings.OBSERVATION_MODEL_TYPE,
+                settings.OBSERVATION_MODEL_PARAMS
+            )
+        return TargetBelievedStrongest(observation_model)
 
     strategy_classes = {
         "TargetStrongest": TargetStrongest,

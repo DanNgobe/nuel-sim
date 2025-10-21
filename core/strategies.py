@@ -104,3 +104,26 @@ class TargetNearest(BaseStrategy):
         others = [p for p in players if p != me]
         action_index = others.index(target) if target in others else None
         return target, action_index
+
+class TargetBelievedStrongest(BaseStrategy):
+    def __init__(self, observation_model):
+        super().__init__("target_believed_strongest")
+        self.observation_model = observation_model
+    
+    def choose_target(self, me: "Player", players: List["Player"], observation=None) -> tuple[Optional["Player"], Optional[int]]:
+        alive = [p for p in players if p != me and p.alive]
+        if not alive:
+            return None, None
+        
+        # Check if observation model is Bayesian
+        if "Bayesian" in self.observation_model.name:
+            # Use believed strength from observation model
+            target = max(alive, key=lambda p: self.observation_model.global_beliefs[p.id]['mean'])
+        else:
+            # Use actual accuracy
+            target = max(alive, key=lambda p: p.accuracy)
+        
+        # Find action index
+        others = [p for p in players if p != me]
+        action_index = others.index(target) if target in others else None
+        return target, action_index

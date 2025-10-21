@@ -84,8 +84,13 @@ def plot_payoff_matrix(strategies, episodes=1000):
         print(f"Player {player+1}: Best strategy is {best_strategy} (win rate: {np.max(avg_payoffs):.3f})")
     
     plt.tight_layout()
+    
+    # Save the figure with observation model type and number of players
+    obs_model = create_game_objects()['observation_model']
+    filename = f"payoff_matrix_{config.NUM_PLAYERS}p_{obs_model.name}.png"
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    print(f"Saved plot as {filename}")
     plt.show()
-    # Save the figure with the number of players in the filename
 
 def plot_strategy_heatmap(strategies, episodes=1000):
     """Plot strategy vs strategy heatmap for 2-player case"""
@@ -135,6 +140,12 @@ def plot_strategy_heatmap(strategies, episodes=1000):
     plt.title('Player 1 Win Rate Matrix')
     plt.xlabel('Player 2 Strategy')
     plt.ylabel('Player 1 Strategy')
+    
+    # Save the figure with observation model type
+    obs_model = create_game_objects()['observation_model']
+    filename = f"strategy_heatmap_2p_{obs_model.name}.png"
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    print(f"Saved plot as {filename}")
     plt.show()
 
 if __name__ == "__main__":
@@ -146,7 +157,8 @@ if __name__ == "__main__":
     
     # Define strategies to test
     test_strategies = [
-        "TargetStrongest",
+        # "TargetStrongest",
+        "TargetBelievedStrongest",
         "TargetRandom",
         "RLlibStrategy"
     ]
