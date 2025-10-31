@@ -2,7 +2,7 @@
 import suppress_warnings
 suppress_warnings.suppress_ray_warnings()
 
-import config.settings as config
+import config.config_loader as config
 from config.factories import create_game_objects, create_strategy
 from core.game_manager import GameManager
 from core.player import Player
@@ -18,24 +18,26 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
     # Create game objects using factories to avoid circular imports
     game_objects = create_game_objects()
     
+    cfg = config.get_config()
+    
     # Handle single strategy mode
     if single_strategy:
         # Create the same strategy for all players
         strategies = [create_strategy(single_strategy, game_objects['observation_model']) 
-                     for _ in range(config.NUM_PLAYERS)]
+                     for _ in range(cfg['game']['num_players'])]
     else:
         strategies = game_objects['strategies']
     
     # Create GameManager with configuration
     game_manager = GameManager(
-        num_players=config.NUM_PLAYERS,
+        num_players=cfg['game']['num_players'],
         gameplay=game_objects['gameplay'],
         observation_model=game_objects['observation_model'],
-        max_rounds=config.NUM_ROUNDS,
-        marksmanship_range=config.MARKSMANSHIP_RANGE,
+        max_rounds=cfg['game']['num_rounds'],
+        marksmanship_range=tuple(cfg['players']['marksmanship_range']),
         strategies=strategies,
-        assigned_accuracies=config.ASSIGNED_ACCURACIES,
-        has_ghost=config.HAS_GHOST
+        assigned_accuracies=cfg['players']['accuracies'],
+        has_ghost=cfg['gameplay']['has_ghost']
     )
     
     # Initialize counters - will be updated after first game creation
@@ -121,13 +123,13 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
         print(f"\nAlive players: {alive_count}")
         # Create column labels - replace last with "Abstain" if ghost exists
         col_labels = [f"A{j}" for j in range(num_players)]
-        if config.HAS_GHOST:
+        if cfg['gameplay']['has_ghost']:
             col_labels[-1] = "Abstain"
         header = "\t" + "\t".join(col_labels)
         print(header)
         
         # Create matrix - exclude ghost row if it exists
-        matrix_size = num_players - 1 if config.HAS_GHOST else num_players
+        matrix_size = num_players - 1 if cfg['gameplay']['has_ghost'] else num_players
         matrix = np.zeros((matrix_size, num_players), dtype=int)
         
         for i in range(matrix_size):
@@ -158,7 +160,7 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
             
             # Create labels - replace last column with "Abstain" if ghost exists
             x_labels = [f"A{j}" for j in range(num_players)]
-            if config.HAS_GHOST:
+            if cfg['gameplay']['has_ghost']:
                 x_labels[-1] = "Abstain"
             
             # Y labels exclude ghost row if it exists

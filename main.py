@@ -6,7 +6,7 @@ suppress_warnings.suppress_ray_warnings()
 import math
 from core.game_manager import GameManager
 from visual import run_game_visual, run_infinite_game_visual
-import config.settings as config
+import config.config_loader as config
 from config.factories import create_game_objects
 
 def print_detailed_episode_results(episode_data):
@@ -57,28 +57,50 @@ def print_detailed_episode_results(episode_data):
     print("="*60)
 
 def main():
-    # Create game objects using factories to avoid circular imports
-    game_objects = create_game_objects()
+    import argparse
     
-    # Create game manager
+    parser = argparse.ArgumentParser(description="Run Nuel Sim")
+    parser.add_argument("--config", type=str, default=None,
+                        help="Path to YAML configuration file")
+    parser.add_argument("--model-path", type=str, default=None,
+                        help="Path to trained model checkpoint")
+    args = parser.parse_args()
+    
+    # Load configuration
+    if args.config:
+        config.load_config(args.config)
+        print(f"Loaded configuration from: {args.config}")
+
+    # Create game objects
+    game_objects = create_game_objects()
+
+      # Override model path if provided
+    if args.model_path:
+        # Update strategies that use RLlib
+        for i, strategy_type in enumerate(game_objects['strategies']):
+            if hasattr(strategy_type, 'checkpoint_path'):
+                strategy_type.checkpoint_path = args.model_path
+                print(f"Using model from: {args.model_path}")
+                
+    cfg = config.get_config()
+    
     game_manager = GameManager(
-        num_players=config.NUM_PLAYERS,
+        num_players=cfg['game']['num_players'],
         gameplay=game_objects['gameplay'],
         observation_model=game_objects['observation_model'],
-        max_rounds=config.NUM_ROUNDS,
-        marksmanship_range=config.MARKSMANSHIP_RANGE,
+        max_rounds=cfg['game']['num_rounds'],
+        marksmanship_range=tuple(cfg['players']['marksmanship_range']),
         strategies=game_objects['strategies'],
-        assigned_accuracies=config.ASSIGNED_ACCURACIES,
-        has_ghost=config.HAS_GHOST,
-        screen_width=config.SCREEN_WIDTH,
-        screen_height=config.SCREEN_HEIGHT
+        assigned_accuracies=cfg['players']['accuracies'],
+        has_ghost=cfg['gameplay']['has_ghost'],
+        screen_width=cfg['visual']['screen_width'],
+        screen_height=cfg['visual']['screen_height']
     )
     
-    if config.RUN_MODE == "visualize":
+    if cfg['game']['run_mode'] == "visualize":
         print("Running visual simulation...")
         run_infinite_game_visual(game_manager)
-
-    else:  # single episode
+    else:
         print("Running single episode...")
         result = game_manager.run_episode()
         print_detailed_episode_results(result)

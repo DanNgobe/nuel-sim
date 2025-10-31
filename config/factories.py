@@ -1,6 +1,7 @@
 # config/factories.py
 # Factory functions to create objects from string configurations
 # This module breaks the circular import by doing the imports only when needed
+import os
 
 def create_gameplay(gameplay_type: str):
     """Factory function to create gameplay objects from string identifiers"""
@@ -55,27 +56,36 @@ def create_strategy(strategy_type: str, observation_model=None):
     
     if strategy_type == "RLlibStrategy":
         from rllib_marl.strategy import RLlibStrategy
-        from . import settings    
+        from . import config_loader
         
-        # Use passed observation model or create new one if none provided
+        config = config_loader.get_config()
+        
         if observation_model is None:
             observation_model = create_observation_model(
-                settings.OBSERVATION_MODEL_TYPE, 
-                settings.OBSERVATION_MODEL_PARAMS
+                config['observation']['model_type'],
+                config['observation']['params']
             )
-                
+        
+        # Build checkpoint path
+        algorithm = config['rllib']['algorithm']
+        base_path = config['rllib']['checkpoint_base_path']
+        num_players = config['game']['num_players']
+        gameplay_type = config['gameplay']['type']
+        obs_model_type = config['observation']['model_type']
+        checkpoint_path = os.path.abspath(f"{base_path}/{algorithm}/{num_players}_players/{gameplay_type}_{obs_model_type}")
+        
         return RLlibStrategy(
-            checkpoint_path=settings.RLLIB_CHECKPOINT_PATH,
+            checkpoint_path=checkpoint_path,
             observation_model=observation_model
         )
 
-    # Handle strategies that need observation model
     if strategy_type == "TargetBelievedStrongest":
         if observation_model is None:
-            from . import settings
+            from . import config_loader
+            config = config_loader.get_config()
             observation_model = create_observation_model(
-                settings.OBSERVATION_MODEL_TYPE,
-                settings.OBSERVATION_MODEL_PARAMS
+                config['observation']['model_type'],
+                config['observation']['params']
             )
         return TargetBelievedStrongest(observation_model)
 
@@ -98,16 +108,20 @@ def create_strategies_list(strategy_types: list, observation_model=None):
     return [create_strategy(strategy_type, observation_model) for strategy_type in strategy_types]
 
 # Convenience function to get all configured objects at once
-def create_game_objects():
-    """Create all game objects based on current configuration"""
-    from . import settings
+def create_game_objects(config_path=None):
+    from . import config_loader
     
-    gameplay = create_gameplay(settings.GAME_PLAY_TYPE)
+    if config_path:
+        config_loader.load_config(config_path)
+    
+    config = config_loader.get_config()
+    
+    gameplay = create_gameplay(config['gameplay']['type'])
     observation_model = create_observation_model(
-        settings.OBSERVATION_MODEL_TYPE, 
-        settings.OBSERVATION_MODEL_PARAMS
+        config['observation']['model_type'], 
+        config['observation']['params']
     )
-    strategies = create_strategies_list(settings.ASSIGNED_STRATEGY_TYPES, observation_model)
+    strategies = create_strategies_list(config['players']['strategy_types'], observation_model)
     
     return {
         'gameplay': gameplay,

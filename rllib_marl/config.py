@@ -18,23 +18,33 @@ import argparse
 from ray.rllib.core.rl_module.default_model_config import DefaultModelConfig
 
 # Import your custom modules
-import config.settings as config
+import config.config_loader as config
 from config.factories import create_game_objects
 
-DEFAULT_CHECKPOINT_DIR = config.RLLIB_CHECKPOINT_PATH
+def get_default_checkpoint_dir():
+    cfg = config.get_config()
+    algorithm = cfg['rllib']['algorithm']
+    base_path = cfg['rllib']['checkpoint_base_path']
+    num_players = cfg['game']['num_players']
+    gameplay_type = cfg['gameplay']['type']
+    obs_model_type = cfg['observation']['model_type']
+    return os.path.abspath(f"{base_path}/{algorithm}/{num_players}_players/{gameplay_type}_{obs_model_type}")
+
+DEFAULT_CHECKPOINT_DIR = get_default_checkpoint_dir()
 
 def get_env_config():
     """Get environment configuration for RLlib"""
     game_objects = create_game_objects()
+    cfg = config.get_config()
     return {
-        "num_players": config.NUM_PLAYERS,
+        "num_players": cfg['game']['num_players'],
         "gameplay": game_objects['gameplay'],
         "observation_model": game_objects['observation_model'],
-        "max_rounds": config.NUM_ROUNDS,
-        "marksmanship_range": config.MARKSMANSHIP_RANGE,
+        "max_rounds": cfg['game']['num_rounds'],
+        "marksmanship_range": tuple(cfg['players']['marksmanship_range']),
         "strategies": [],  # Empty for RL training
-        "assigned_accuracies": getattr(config, 'ASSIGNED_ACCURACIES', []),
-        "has_ghost": config.HAS_GHOST,
+        "assigned_accuracies": cfg['players']['accuracies'],
+        "has_ghost": cfg['gameplay']['has_ghost'],
         "capture_all_terminate": False
     }
 

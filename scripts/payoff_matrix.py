@@ -2,18 +2,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from itertools import product
-import config.settings as config
+import config.config_loader as config
 from config.factories import create_game_objects, create_strategy
 from core.game_manager import GameManager
 
 def compute_payoff_matrix(strategies, episodes=1000):
     """Compute payoff matrix for given strategies via simulation"""
+    cfg = config.get_config()
     n = len(strategies)
-    n_combinations = n ** config.NUM_PLAYERS
-    payoff_matrix = np.zeros((config.NUM_PLAYERS, n, n_combinations))
+    n_combinations = n ** cfg['game']['num_players']
+    payoff_matrix = np.zeros((cfg['game']['num_players'], n, n_combinations))
     
     # For N-player game, iterate through all strategy combinations
-    for i, strat_combo in enumerate(product(range(n), repeat=config.NUM_PLAYERS)):
+    for i, strat_combo in enumerate(product(range(n), repeat=cfg['game']['num_players'])):
         print(f"Testing combination {i+1}/{n_combinations}: {[strategies[s] for s in strat_combo]}")
         
         # Create strategies for this combination
@@ -22,15 +23,15 @@ def compute_payoff_matrix(strategies, episodes=1000):
         
         # Run simulation
         game_manager = GameManager(
-            num_players=config.NUM_PLAYERS,
+            num_players=cfg['game']['num_players'],
             gameplay=create_game_objects()['gameplay'],
             observation_model=create_game_objects()['observation_model'],
-            max_rounds=config.NUM_ROUNDS,
+            max_rounds=cfg['game']['num_rounds'],
             strategies=strategy_objects,
-            has_ghost=config.HAS_GHOST
+            has_ghost=cfg['gameplay']['has_ghost']
         )
         
-        wins = [0] * config.NUM_PLAYERS
+        wins = [0] * cfg['game']['num_players']
         for _ in range(episodes):
             game = game_manager.reset_game()
             while not game.is_over():
@@ -43,7 +44,7 @@ def compute_payoff_matrix(strategies, episodes=1000):
                     wins[player.id] += 1
         
         # Store payoffs (win rates)
-        for player_id in range(config.NUM_PLAYERS):
+        for player_id in range(cfg['game']['num_players']):
             payoff_matrix[player_id][strat_combo[player_id]][i] = wins[player_id] / episodes
     
     return payoff_matrix
@@ -58,11 +59,12 @@ def plot_payoff_matrix(strategies, episodes=1000):
     payoffs = compute_payoff_matrix(strategies, episodes)
     n_strategies = len(strategies)
     
-    fig, axes = plt.subplots(1, config.NUM_PLAYERS, figsize=(5*config.NUM_PLAYERS, 4))
-    if config.NUM_PLAYERS == 1:
+    cfg = config.get_config()
+    fig, axes = plt.subplots(1, cfg['game']['num_players'], figsize=(5*cfg['game']['num_players'], 4))
+    if cfg['game']['num_players'] == 1:
         axes = [axes]
     
-    for player in range(config.NUM_PLAYERS):
+    for player in range(cfg['game']['num_players']):
         # Average payoff across all opponent combinations
         avg_payoffs = np.mean(payoffs[player], axis=1)
         
@@ -87,14 +89,15 @@ def plot_payoff_matrix(strategies, episodes=1000):
     
     # Save the figure with observation model type and number of players
     obs_model = create_game_objects()['observation_model']
-    filename = f"payoff_matrix_{config.NUM_PLAYERS}p_{obs_model.name}.png"
+    filename = f"payoff_matrix_{cfg['game']['num_players']}p_{obs_model.name}.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     print(f"Saved plot as {filename}")
     plt.show()
 
 def plot_strategy_heatmap(strategies, episodes=1000):
     """Plot strategy vs strategy heatmap for 2-player case"""
-    if config.NUM_PLAYERS != 2:
+    cfg = config.get_config()
+    if cfg['game']['num_players'] != 2:
         print("Strategy heatmap only available for 2-player games")
         return
     
@@ -115,7 +118,7 @@ def plot_strategy_heatmap(strategies, episodes=1000):
                 gameplay=create_game_objects()['gameplay'],
                 observation_model=create_game_objects()['observation_model'],
                 strategies=strategy_objects,
-                has_ghost=config.HAS_GHOST
+                has_ghost=cfg['gameplay']['has_ghost']
             )
             
             p1_wins = 0
@@ -163,9 +166,10 @@ if __name__ == "__main__":
         "RLlibStrategy"
     ]
     
-    print(f"Computing payoff matrix for {config.NUM_PLAYERS} players with {args.episodes} episodes per combination...")
+    cfg = config.get_config()
+    print(f"Computing payoff matrix for {cfg['game']['num_players']} players with {args.episodes} episodes per combination...")
     
-    if config.NUM_PLAYERS == 2:
+    if cfg['game']['num_players'] == 2:
         plot_strategy_heatmap(test_strategies, episodes=args.episodes)
     else:
         plot_payoff_matrix(test_strategies, episodes=args.episodes)

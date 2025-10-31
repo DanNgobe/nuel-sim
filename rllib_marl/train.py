@@ -64,8 +64,13 @@ def plot_training_stats(stats, save_path="rllib_marl/training_stats.png"):
     plt.close()
 
 
-def train_agent(algorithm="dqn", episodes=2000, checkpoint_dir=None, plot_stats=False, evaluate_after=False):
+def train_agent(algorithm="dqn", episodes=2000, output_path=None, config_path=None, plot_stats=False, evaluate_after=False):
     """Train RL agent with specified algorithm"""
+    if config_path:
+        import config.config_loader as config_loader
+        config_loader.load_config(config_path)
+        print(f"Loaded configuration from: {config_path}")
+    
     register_nuel_env()
     
     # Get configuration based on algorithm
@@ -79,9 +84,10 @@ def train_agent(algorithm="dqn", episodes=2000, checkpoint_dir=None, plot_stats=
     # Build algorithm
     algo = config.build_algo()
     
-    # Set up checkpoint directory
-    checkpoint_dir = checkpoint_dir or DEFAULT_CHECKPOINT_DIR
-    os.makedirs(checkpoint_dir, exist_ok=True)
+    # Set up output directory
+    output_path = output_path or DEFAULT_CHECKPOINT_DIR
+    output_path = os.path.abspath(output_path)
+    os.makedirs(output_path, exist_ok=True)
     
     # Statistics collection
     stats = defaultdict(list) if plot_stats else None
@@ -112,26 +118,26 @@ def train_agent(algorithm="dqn", episodes=2000, checkpoint_dir=None, plot_stats=
         
         # Save checkpoint periodically
         if i % 500 == 0 and i > 0:
-            algo.save_checkpoint(checkpoint_dir)
+            algo.save_checkpoint(output_path)
             print(f"Checkpoint saved at iteration {i}")
     
     # Save final checkpoint
-    algo.save_checkpoint(checkpoint_dir)
-    print(f"\nTraining completed.")
+    algo.save_checkpoint(output_path)
+    print(f"\nTraining completed. Checkpoints saved to: {output_path}")
     
     # Generate plots if requested
     if plot_stats and stats:
-        stats_plot_path = os.path.join(checkpoint_dir, "training_stats.png")
+        stats_plot_path = os.path.join(output_path, "training_stats.png")
         plot_training_stats(dict(stats), save_path=stats_plot_path)
     
     # Run evaluation script if requested
     if evaluate_after:
         from scripts.evaluate import evaluate
-        import config.settings as config
+        import config.config_loader as config_loader
         from config.factories import create_game_objects
         
         game_objects = create_game_objects()
-        evaluate_output_dir = os.path.join(checkpoint_dir, f"evaluation/{game_objects['observation_model'].name}")
+        evaluate_output_dir = os.path.join(output_path, f"evaluation/{game_objects['observation_model'].name}")
         os.makedirs(evaluate_output_dir, exist_ok=True)
         
         evaluate(num_episodes=1000, single_strategy='RLlibStrategy', output_path=evaluate_output_dir)
@@ -145,8 +151,10 @@ def main():
                         help="Algorithm to use for training (default: dqn)")
     parser.add_argument("--episodes", type=int, default=2000,
                         help="Number of training iterations (default: 2000)")
-    parser.add_argument("--checkpoint-dir", type=str, default=None,
-                        help="Directory to save checkpoints (default: from config)")
+    parser.add_argument("--output-path", type=str, default=None,
+                        help="Directory to save training outputs (default: from config)")
+    parser.add_argument("--config", type=str, default=None,
+                        help="Path to YAML configuration file (default: config/default.yaml)")
     parser.add_argument("--plot", action="store_true",
                         help="Collect statistics and generate plots at the end")
     parser.add_argument("--evaluate", action="store_true",
@@ -159,7 +167,8 @@ def main():
         train_agent(
             algorithm=args.algorithm,
             episodes=args.episodes,
-            checkpoint_dir=args.checkpoint_dir,
+            output_path=args.output_path,
+            config_path=args.config,
             plot_stats=args.plot,
             evaluate_after=args.evaluate
         )

@@ -34,6 +34,12 @@ pip install -r requirements.txt
 # Basic visual simulation
 python main.py
 
+# With custom config
+python main.py --config config/default.yaml
+
+# With trained model
+python main.py --config config/default.yaml --model-path ./my_model
+
 # Statistical evaluation
 python -m scripts.evaluate --episodes 1000
 ```
@@ -44,12 +50,15 @@ python -m scripts.evaluate --episodes 1000
 
 ```bash
 # Ray RLlib training
-python -m rllib_marl.train --algorithm ppo --episodes 2000
+python -m rllib_marl.train --algorithm ppo --episodes 2000 --output-path ./training
+
+# With custom config
+python -m rllib_marl.train --config config/default.yaml --output-path ./training
 ```
 
 ### Configuration
 
-Edit `config/settings.py` to customize:
+Edit `config/default.yaml` or create custom YAML files:
 - Number of players
 - Game modes (Sequential/Simultaneous)
 - Player strategies and accuracies

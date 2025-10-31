@@ -1,1 +1,1 @@
-from .settings import *
+from .config_loader import *

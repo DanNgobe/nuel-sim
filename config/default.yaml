@@ -1,0 +1,38 @@
+# Default configuration for Nuel Sim
+game:
+  num_players: 3
+  num_rounds: 20  # null for infinite
+  run_mode: "visualize"  # "visualize" or "single"
+  
+gameplay:
+  type: "SequentialGamePlay"  # "SequentialGamePlay", "RandomGamePlay", "SimultaneousGamePlay"
+  has_ghost: true
+
+observation:
+  model_type: "SimpleObservation"  # "BayesianMeanObservation", "BayesianAbstentionObservation", "SimpleObservation"
+  params:
+    num_players: 3
+    has_ghost: true
+    # setup_shots: 0  # Comment out for non-Bayesian models
+
+players:
+  marksmanship_range: [0.1, 0.9]
+  strategy_types: ["TargetRandom", "TargetRandom", "TargetRandom"] # "TargetRandom", "TargetWeakest", "TargetStrongest", "RLlibStrategy"
+  accuracies: []  # Empty for random generation
+
+rllib:
+  algorithm: "ppo"  # "ppo" or "dqn"
+  checkpoint_base_path: "rllib_marl/checkpoints"
+
+visual:
+  screen_width: 800
+  screen_height: 600
+  player_radius: 30
+  fps: 1
+  arrow_size: 15
+  colors:
+    background: [30, 30, 30]
+    player_alive: [0, 150, 255]
+    player_dead: [100, 100, 100]
+    hit: [0, 255, 0]
+    miss: [255, 0, 0]
