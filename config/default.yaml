@@ -17,7 +17,7 @@ observation:
 
 players:
   marksmanship_range: [0.1, 0.9]
-  strategy_types: ["TargetRandom", "TargetRandom", "TargetRandom"] # "TargetRandom", "TargetWeakest", "TargetStrongest", "RLlibStrategy"
+  strategy_types: ["RLlibStrategy", "RLlibStrategy", "RLlibStrategy"] # "TargetRandom", "TargetWeakest", "TargetStrongest", "RLlibStrategy"
   accuracies: []  # Empty for random generation
 
 rllib:

@@ -103,12 +103,16 @@ def create_strategy(strategy_type: str, observation_model=None):
     return strategy_classes[strategy_type]()
 
 
-def create_strategies_list(strategy_types: list, observation_model=None):
+def create_strategies_list(strategy_types: list, observation_model=None, use_random_for_training=False):
     """Factory function to create a list of strategy objects"""
+    if use_random_for_training:
+        # Replace RLlibStrategy with TargetRandom for training
+        safe_strategy_types = ["TargetRandom" if s == "RLlibStrategy" else s for s in strategy_types]
+        return [create_strategy(strategy_type, observation_model) for strategy_type in safe_strategy_types]
     return [create_strategy(strategy_type, observation_model) for strategy_type in strategy_types]
 
 # Convenience function to get all configured objects at once
-def create_game_objects(config_path=None):
+def create_game_objects(config_path=None, use_random_for_training=False):
     from . import config_loader
     
     if config_path:
@@ -121,7 +125,7 @@ def create_game_objects(config_path=None):
         config['observation']['model_type'], 
         config['observation']['params']
     )
-    strategies = create_strategies_list(config['players']['strategy_types'], observation_model)
+    strategies = create_strategies_list(config['players']['strategy_types'], observation_model, use_random_for_training)
     
     return {
         'gameplay': gameplay,

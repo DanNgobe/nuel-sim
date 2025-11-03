@@ -5,6 +5,8 @@ from itertools import product
 import config.config_loader as config
 from config.factories import create_game_objects, create_strategy
 from core.game_manager import GameManager
+from scipy.stats import chi2_contingency
+from statsmodels.stats.proportion import proportion_confint
 
 def compute_payoff_matrix(strategies, episodes=1000):
     """Compute payoff matrix for given strategies via simulation"""
@@ -81,9 +83,27 @@ def plot_payoff_matrix(strategies, episodes=1000):
         axes[player].set_title(f'Player {player+1} Win Rate by Strategy')
         axes[player].set_xlabel('Strategy')
         
+        # Statistical analysis
+        win_counts = (avg_payoffs * episodes).astype(int)
+        if len(win_counts) > 1 and sum(win_counts) > 0:
+            expected = [sum(win_counts) / len(win_counts)] * len(win_counts)
+            chi2, p_value = chi2_contingency([win_counts, expected])[:2]
+            
+            # Add p-value to plot
+            sig_text = f"p = {p_value:.3f}" + (" *" if p_value < 0.05 else "")
+            axes[player].text(0.02, 0.98, sig_text, transform=axes[player].transAxes, 
+                            verticalalignment='top', bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8))
+        
         # Print interpretation
         best_strategy = strategies[np.argmax(avg_payoffs)]
         print(f"Player {player+1}: Best strategy is {best_strategy} (win rate: {np.max(avg_payoffs):.3f})")
+        
+        # Print confidence intervals
+        print(f"Player {player+1} Strategy Confidence Intervals (95%):")
+        for i, strategy in enumerate(strategies):
+            wins = int(avg_payoffs[i] * episodes)
+            ci_low, ci_high = proportion_confint(wins, episodes, alpha=0.05, method='wilson')
+            print(f"  {strategy}: [{ci_low:.3f}, {ci_high:.3f}]")
     
     plt.tight_layout()
     
@@ -133,6 +153,18 @@ def plot_strategy_heatmap(strategies, episodes=1000):
             
             payoff_matrix[i][j] = p1_wins / episodes
     
+    # Statistical test for strategy differences
+    win_counts = (payoff_matrix * episodes).astype(int)
+    if np.sum(win_counts) > 0:
+        flat_wins = win_counts.flatten()
+        expected = [np.mean(flat_wins)] * len(flat_wins)
+        chi2, p_value = chi2_contingency([flat_wins, expected])[:2]
+        print(f"\nStatistical test for strategy differences: p = {p_value:.4f}")
+        if p_value < 0.05:
+            print("✓ Strategies perform significantly differently")
+        else:
+            print("~ No significant difference between strategies")
+    
     plt.figure(figsize=(8, 6))
     sns.heatmap(payoff_matrix, 
                annot=True, 
@@ -143,6 +175,12 @@ def plot_strategy_heatmap(strategies, episodes=1000):
     plt.title('Player 1 Win Rate Matrix')
     plt.xlabel('Player 2 Strategy')
     plt.ylabel('Player 1 Strategy')
+    
+    # Add statistical significance to plot
+    if np.sum(win_counts) > 0:
+        sig_text = f"p = {p_value:.3f}" + (" *" if p_value < 0.05 else "")
+        plt.text(0.02, 0.98, sig_text, transform=plt.gca().transAxes, 
+                verticalalignment='top', bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8))
     
     # Save the figure with observation model type
     obs_model = create_game_objects()['observation_model']
@@ -163,7 +201,8 @@ if __name__ == "__main__":
         # "TargetStrongest",
         "TargetBelievedStrongest",
         "TargetRandom",
-        "RLlibStrategy"
+        # "RLlibStrategy"
+        "TargetWeaker",
     ]
     
     cfg = config.get_config()

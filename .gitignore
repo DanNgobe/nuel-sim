@@ -14,3 +14,4 @@ pygame_cache/
 
 # Windows specific files
 Thumbs.db
+rllib_marl/checkpoints

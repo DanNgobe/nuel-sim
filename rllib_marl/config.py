@@ -34,7 +34,7 @@ DEFAULT_CHECKPOINT_DIR = get_default_checkpoint_dir()
 
 def get_env_config():
     """Get environment configuration for RLlib"""
-    game_objects = create_game_objects()
+    game_objects = create_game_objects(use_random_for_training=True)  # Use TargetRandom instead of RLlibStrategy
     cfg = config.get_config()
     return {
         "num_players": cfg['game']['num_players'],

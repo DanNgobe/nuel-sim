@@ -13,6 +13,8 @@ import seaborn as sns
 from collections import defaultdict
 import numpy as np
 import os
+from scipy.stats import chi2_contingency
+from statsmodels.stats.proportion import proportion_confint
 
 def evaluate(num_episodes=100, single_strategy=None, output_path=None):
     # Create game objects using factories to avoid circular imports
@@ -48,6 +50,16 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
     # Stats: alive_count -> shooter_rank -> target_rank -> count
     round_stats = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
     
+    # Abstention analysis data
+    abstention_by_rank = defaultdict(int)  # rank -> abstention_count
+    total_shots_by_rank = defaultdict(int)  # rank -> total_shots
+    abstention_by_alive_count = defaultdict(lambda: defaultdict(int))  # alive_count -> rank -> abstentions
+    total_by_alive_count = defaultdict(lambda: defaultdict(int))  # alive_count -> rank -> total_opportunities
+    
+    # Abstention by actual accuracy values
+    abstention_by_accuracy = defaultdict(int)  # accuracy -> abstention_count
+    total_shots_by_accuracy = defaultdict(int)  # accuracy -> total_shots
+    
     # Collect accuracy vs win rate data
     accuracy_win_data = []  # List of (accuracy, won) tuples for scatter plot
 
@@ -61,6 +73,8 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
             win_counts = {player.name: 0 for player in players}
             win_counts_accuracy = {f"A{i}": 0 for i in range(len(players))}
             survivor_counts = {f"S{i}": 0 for i in range(len(players) + 1)}
+            # Get the number of players for matrix calculations
+            num_players = len(players)
         
         # Sort players by accuracy for ranking
         sorted_accuracy = sorted(players, key=lambda p: p.accuracy if p.accuracy > 0 else 999)
@@ -72,10 +86,24 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
             game.run_auto_turn()
             last_round = game.history[-1]
             for shooter, target, hit in last_round:
-                if shooter and target:
+                if shooter:  # Player took a turn
                     shooter_rank = sorted_accuracy.index(shooter)
-                    target_rank = sorted_accuracy.index(target)
-                    round_stats[alive_count][shooter_rank][target_rank] += 1
+                    shooter_accuracy = shooter.accuracy
+                    total_shots_by_rank[shooter_rank] += 1
+                    total_shots_by_accuracy[shooter_accuracy] += 1
+                    total_by_alive_count[alive_count][shooter_rank] += 1
+                    
+                    if target and target.name != "Ghost":  # Shot at a real player
+                        target_rank = sorted_accuracy.index(target)
+                        round_stats[alive_count][shooter_rank][target_rank] += 1
+                    else:  # Abstained (target is None or Ghost)
+                        abstention_by_rank[shooter_rank] += 1
+                        abstention_by_accuracy[shooter_accuracy] += 1
+                        abstention_by_alive_count[alive_count][shooter_rank] += 1
+                        # For matrix display, abstention goes to last column (ghost index)
+                        if cfg['gameplay']['has_ghost']:
+                            ghost_index = num_players - 1
+                            round_stats[alive_count][shooter_rank][ghost_index] += 1
 
         # Track win info and accuracy data for all players
         alive_players = [p for p in players if p.alive]
@@ -96,9 +124,6 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
 
         survivor_counts[f"S{len(alive_players)}"] += 1
 
-    # Get the number of players for matrix calculations
-    num_players = len(players)
-
     # Display survivor counts
     print("\n=== Survivor Counts ===")
     for survivors, count in survivor_counts.items():
@@ -113,6 +138,53 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
     print("\nWin counts by accuracy rank (worst to best):")
     for name, count in win_counts_accuracy.items():
         print(f"{name}: {count} wins")
+    
+    # Statistical analysis of win rates
+    print("\n=== Statistical Analysis ===")
+    
+    # Chi-square test for win rate differences
+    win_values = list(win_counts_accuracy.values())
+    if len(win_values) > 1 and sum(win_values) > 0:
+        expected = [sum(win_values) / len(win_values)] * len(win_values)
+        chi2, p_value = chi2_contingency([win_values, expected])[:2]
+        print(f"Chi-square test for equal win rates: p = {p_value:.4f}")
+        if p_value < 0.05:
+            print("✓ Win rates are significantly different")
+        else:
+            print("~ No significant difference in win rates")
+    
+    # Confidence intervals for win rates
+    print("\nWin Rate Confidence Intervals (95%):")
+    for name, count in win_counts_accuracy.items():
+        if num_episodes > 0:
+            rate = count / num_episodes
+            ci_low, ci_high = proportion_confint(count, num_episodes, alpha=0.05, method='wilson')
+            print(f"{name}: {rate:.3f} [{ci_low:.3f}, {ci_high:.3f}]")
+    
+    # Display abstention analysis
+    print("\n=== Abstention Analysis ===")
+    print("\nAbstention Rate by Accuracy Rank:")
+    for rank in sorted(abstention_by_rank.keys()):
+        total = total_shots_by_rank[rank]
+        abstentions = abstention_by_rank[rank]
+        rate = (abstentions / total * 100) if total > 0 else 0
+        print(f"A{rank}: {abstentions}/{total} ({rate:.1f}%)")
+    
+    print("\nAbstention Rate by Accuracy Value:")
+    for accuracy in sorted(abstention_by_accuracy.keys()):
+        total = total_shots_by_accuracy[accuracy]
+        abstentions = abstention_by_accuracy[accuracy]
+        rate = (abstentions / total * 100) if total > 0 else 0
+        print(f"{accuracy:.1f}: {abstentions}/{total} ({rate:.1f}%)")
+    
+    print("\nAbstention Rate by Alive Players and Accuracy Rank:")
+    for alive_count in sorted(abstention_by_alive_count.keys(), reverse=True):
+        print(f"\nAlive players: {alive_count}")
+        for rank in sorted(abstention_by_alive_count[alive_count].keys()):
+            total = total_by_alive_count[alive_count][rank]
+            abstentions = abstention_by_alive_count[alive_count][rank]
+            rate = (abstentions / total * 100) if total > 0 else 0
+            print(f"  A{rank}: {abstentions}/{total} ({rate:.1f}%)")
 
     # Display round-by-round shooting matrix
     print("\n=== Accuracy Rank Shot Matrix by Number of Alive Players ===")
@@ -187,6 +259,69 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
         else:
             plt.show()
 
+    # Create abstention analysis plots
+    if cfg['gameplay']['has_ghost'] and (abstention_by_rank or any(abstention_by_alive_count.values())):
+        fig_abs, axes_abs = plt.subplots(2, 2, figsize=(15, 10))
+        
+        # Abstention rate by accuracy rank (top left)
+        ranks = sorted(abstention_by_rank.keys())
+        rates = [(abstention_by_rank[rank] / total_shots_by_rank[rank] * 100) if total_shots_by_rank[rank] > 0 else 0 for rank in ranks]
+        rank_labels = [f"A{rank}" for rank in ranks]
+        
+        axes_abs[0, 0].bar(rank_labels, rates, color='orange', alpha=0.7)
+        axes_abs[0, 0].set_title("Abstention Rate by Accuracy Rank")
+        axes_abs[0, 0].set_xlabel("Accuracy Rank (A0 = Worst)")
+        axes_abs[0, 0].set_ylabel("Abstention Rate (%)")
+        axes_abs[0, 0].grid(axis='y', alpha=0.3)
+        
+        # Abstention rate by alive count (heatmap)
+        alive_counts = sorted(abstention_by_alive_count.keys(), reverse=True)
+        all_ranks = sorted(set().union(*[abstention_by_alive_count[ac].keys() for ac in alive_counts]))
+        
+        if alive_counts and all_ranks:
+            heatmap_matrix = np.zeros((len(alive_counts), len(all_ranks)))
+            for i, alive_count in enumerate(alive_counts):
+                for j, rank in enumerate(all_ranks):
+                    total = total_by_alive_count[alive_count][rank]
+                    abstentions = abstention_by_alive_count[alive_count][rank]
+                    rate = (abstentions / total * 100) if total > 0 else 0
+                    heatmap_matrix[i, j] = rate
+            
+            sns.heatmap(heatmap_matrix, annot=True, fmt=".1f", cmap="Reds", 
+                       xticklabels=[f"A{r}" for r in all_ranks],
+                       yticklabels=[f"{ac} alive" for ac in alive_counts],
+                       ax=axes_abs[0, 1], cbar_kws={'label': 'Abstention Rate (%)'})
+            axes_abs[0, 1].set_title("Abstention Rate by Alive Players vs Accuracy Rank")
+            axes_abs[0, 1].set_xlabel("Accuracy Rank")
+            axes_abs[0, 1].set_ylabel("Number of Alive Players")
+        
+        # Abstention rate by accuracy value (bottom, spanning both columns)
+        accuracies = sorted(abstention_by_accuracy.keys())
+        acc_rates = [(abstention_by_accuracy[acc] / total_shots_by_accuracy[acc] * 100) if total_shots_by_accuracy[acc] > 0 else 0 for acc in accuracies]
+        acc_labels = [f"{acc:.1f}" for acc in accuracies]
+        
+        # Use subplot2grid to span both bottom columns
+        plt.subplot2grid((2, 2), (1, 0), colspan=2, fig=fig_abs)
+        plt.bar(acc_labels, acc_rates, color='green', alpha=0.7)
+        plt.title("Abstention Rate by Accuracy Value")
+        plt.xlabel("Accuracy Value")
+        plt.ylabel("Abstention Rate (%)")
+        plt.grid(axis='y', alpha=0.3)
+        
+        # Hide the unused bottom subplots
+        axes_abs[1, 0].set_visible(False)
+        axes_abs[1, 1].set_visible(False)
+        
+        plt.suptitle(f"Abstention Analysis ({num_episodes} Episodes)")
+        plt.tight_layout()
+        
+        if output_path:
+            abstention_path = os.path.join(output_path, "abstention_analysis.png")
+            plt.savefig(abstention_path, dpi=300, bbox_inches='tight')
+            print(f"Abstention analysis saved to: {abstention_path}")
+        else:
+            plt.show()
+
     # Combined survivor counts and win charts
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
     
@@ -198,6 +333,14 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
     axes[0, 0].set_xlabel("Player (Position)")
     axes[0, 0].set_ylabel("Wins")
     axes[0, 0].grid(axis='y', alpha=0.3)
+    
+    # Add statistical test for position
+    if len(wins) > 1 and sum(wins) > 0:
+        expected = [sum(wins) / len(wins)] * len(wins)
+        chi2, p_value = chi2_contingency([wins, expected])[:2]
+        sig_text = f"p = {p_value:.3f}" + (" *" if p_value < 0.05 else "")
+        axes[0, 0].text(0.02, 0.98, sig_text, transform=axes[0, 0].transAxes, 
+                        verticalalignment='top', bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8))
 
     # Win counts by accuracy rank
     accuracy_names = list(win_counts_accuracy.keys())
@@ -207,6 +350,14 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
     axes[1, 0].set_xlabel("Accuracy Rank (A0 = Worst)")
     axes[1, 0].set_ylabel("Wins")
     axes[1, 0].grid(axis='y', alpha=0.3)
+    
+    # Add statistical significance annotation
+    if len(accuracy_wins) > 1 and sum(accuracy_wins) > 0:
+        expected = [sum(accuracy_wins) / len(accuracy_wins)] * len(accuracy_wins)
+        chi2, p_value = chi2_contingency([accuracy_wins, expected])[:2]
+        sig_text = f"p = {p_value:.3f}" + (" *" if p_value < 0.05 else "")
+        axes[1, 0].text(0.02, 0.98, sig_text, transform=axes[1, 0].transAxes, 
+                        verticalalignment='top', bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8))
 
      # Survivor counts
     survivor_labels = list(survivor_counts.keys())
@@ -216,6 +367,14 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
     axes[0, 1].set_xlabel("Number of Survivors")
     axes[0, 1].set_ylabel("Episodes")
     axes[0, 1].grid(axis='y', alpha=0.3)
+    
+    # Add statistical test for survivor distribution
+    if len(survivor_values) > 1 and sum(survivor_values) > 0:
+        expected = [sum(survivor_values) / len(survivor_values)] * len(survivor_values)
+        chi2, p_value = chi2_contingency([survivor_values, expected])[:2]
+        sig_text = f"p = {p_value:.3f}" + (" *" if p_value < 0.05 else "")
+        axes[0, 1].text(0.02, 0.98, sig_text, transform=axes[0, 1].transAxes, 
+                        verticalalignment='top', bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8))
 
     # Accuracy vs Win Rate scatter plot
     if len(accuracy_win_data) > 0:

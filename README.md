@@ -139,6 +139,16 @@ results = run_evaluation(
 )
 ```
 
+### Strategy Convergence Analysis
+
+```bash
+# Run multiple training sessions
+python -m scripts.run_multiple_training --runs 5 --episodes 4000
+
+# Analyze convergence using KL divergence
+python -m scripts.analyze_convergence --runs-dir multiple_runs
+```
+
 ## Contributing
 
 1. Fork the repository
