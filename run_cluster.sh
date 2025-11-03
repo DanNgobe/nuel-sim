@@ -10,8 +10,8 @@
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate myenv
 
-# Run multiple training sessions for convergence analysis
-python -m scripts.run_multiple_training --runs 5 --episodes 4000 --output-dir multiple_runs
+# Run multiple training sessions for convergence analysis (parallel on cluster)
+python -m scripts.run_multiple_training --runs 5 --episodes 4000 --output-dir multiple_runs --parallel
 
 # Analyze convergence
 python -m scripts.analyze_convergence --runs-dir multiple_runs
