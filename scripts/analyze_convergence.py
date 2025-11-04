@@ -118,9 +118,23 @@ def collect_action_probabilities(checkpoint_path, num_episodes=100, config_path=
                         probs = probs / np.sum(probs)
                         action_probs.append(probs)
             
-            # Take random actions to continue episode
-            actions = {agent_id: np.random.randint(0, game_manager.action_spaces[agent_id].n) 
-                      for agent_id in obs.keys()}
+            # Take proper random actions to continue episode (like TargetRandom strategy)
+            from core.strategies import TargetRandom
+            random_strategy = TargetRandom()
+            
+            actions = {}
+            for agent_id in obs.keys():
+                # Get the player and game state
+                players = game_manager.current_game.players
+                # agent_id is already an integer (player ID)
+                player_id = agent_id if isinstance(agent_id, int) else int(agent_id.split('_')[1])
+                me = next(p for p in players if p.id == player_id)
+                
+                # Use TargetRandom strategy to choose a valid target
+                target, action_index = random_strategy.choose_target(me, players)
+                
+                # If no valid target, use action 0 (or handle abstention if supported)
+                actions[agent_id] = action_index if action_index is not None else 0
             
             obs, _, terminated, _, _ = game_manager.step(actions)
             
@@ -196,8 +210,69 @@ def analyze_convergence(runs_dir="multiple_runs", config_path=None):
         all_probs[run_name] = probs
         print(f"Collected {len(probs)} probability samples")
     
-    # Compute pairwise KL divergences
-    run_names = list(all_probs.keys())
+    # Add proper random strategy baseline that follows game rules
+    print("Generating proper TargetRandom strategy baselines...")
+    if all_probs:
+        action_dim = list(all_probs.values())[0].shape[1]
+        n_samples = len(list(all_probs.values())[0])
+        
+        # Generate proper random baseline by simulating TargetRandom strategy
+        random_probs = []
+        from core.strategies import TargetRandom
+        random_strategy = TargetRandom()
+        
+        # Create a temporary game manager to simulate random strategy behavior
+        cfg = config.get_config()
+        game_objects = create_game_objects(use_random_for_training=True)
+        temp_game_manager = GameManager(
+            num_players=cfg['game']['num_players'],
+            gameplay=game_objects['gameplay'],
+            observation_model=game_objects['observation_model'],
+            max_rounds=cfg['game']['num_rounds'],
+            marksmanship_range=tuple(cfg['players']['marksmanship_range']),
+            strategies=[random_strategy] * cfg['game']['num_players'],
+            assigned_accuracies=cfg['players']['accuracies'],
+            has_ghost=cfg['gameplay']['has_ghost']
+        )
+        
+        # Collect random strategy probabilities across various game states
+        for _ in range(n_samples):
+            # Reset game to get a random state
+            obs, _ = temp_game_manager.reset()
+            if obs:
+                # For each active agent, get the probability distribution for TargetRandom
+                agent_id = list(obs.keys())[0]  # Take first active agent
+                players = temp_game_manager.current_game.players
+                # agent_id is already an integer (player ID)
+                player_id = agent_id if isinstance(agent_id, int) else int(agent_id.split('_')[1])
+                me = next(p for p in players if p.id == player_id)
+                
+                # Get alive targets (excluding self)
+                alive_targets = [p for p in players if p != me and p.alive]
+                
+                # Create probability distribution
+                probs = np.zeros(action_dim)
+                if alive_targets:
+                    # Equal probability for each alive target
+                    others = [p for p in players if p != me]
+                    for target in alive_targets:
+                        if target in others:
+                            action_index = others.index(target)
+                            if action_index < action_dim:
+                                probs[action_index] = 1.0 / len(alive_targets)
+                else:
+                    # If no valid targets, assign uniform (this shouldn't happen in practice)
+                    probs = np.full(action_dim, 1.0/action_dim)
+                
+                random_probs.append(probs)
+        
+        all_probs["Random"] = np.array(random_probs)
+        print(f"Generated {len(random_probs)} TargetRandom probability samples for baseline comparison")
+    
+    # Include Random in matrix display but track trained runs separately
+    all_runs = [name for name in all_probs.keys() if not name.endswith('_vs_Random')]
+    trained_runs = [name for name in all_runs if name != "Random"]
+    run_names = all_runs  # Include Random in display
     kl_matrix = np.zeros((len(run_names), len(run_names)))
     
     for i, run1 in enumerate(run_names):
@@ -222,14 +297,28 @@ def analyze_convergence(runs_dir="multiple_runs", config_path=None):
     ax1.set_title("KL Divergence Between Runs")
     plt.colorbar(im, ax=ax1)
     
-    # Add text annotations
+    # Add text annotations with random comparison
     for i in range(len(run_names)):
         for j in range(len(run_names)):
-            text = ax1.text(j, i, f'{kl_matrix[i, j]:.3f}',
-                           ha="center", va="center", color="white")
+            if i == j:
+                if run_names[i] == "Random":
+                    text = ax1.text(j, i, '0.000',
+                                   ha="center", va="center", color="white")
+                else:
+                    # Show KL divergence vs random for trained runs
+                    avg_probs_run = np.mean(all_probs[run_names[i]], axis=0)
+                    avg_probs_random = np.mean(all_probs["Random"], axis=0)
+                    kl_vs_random = compute_kl_divergence(avg_probs_run, avg_probs_random)
+                    text = ax1.text(j, i, '-',
+                                   ha="center", va="center", color="yellow", fontsize=8)
+            else:
+                text = ax1.text(j, i, f'{kl_matrix[i, j]:.3f}',
+                               ha="center", va="center", color="white")
     
-    # Distribution of KL divergences
-    upper_triangle = kl_matrix[np.triu_indices_from(kl_matrix, k=1)]
+    # Distribution of KL divergences (exclude Random from statistics)
+    trained_indices = [i for i, name in enumerate(run_names) if name != "Random"]
+    trained_matrix = kl_matrix[np.ix_(trained_indices, trained_indices)]
+    upper_triangle = trained_matrix[np.triu_indices_from(trained_matrix, k=1)]
     ax2.hist(upper_triangle, bins=10, alpha=0.7, color='skyblue')
     ax2.set_xlabel("KL Divergence")
     ax2.set_ylabel("Frequency")
@@ -245,10 +334,11 @@ def analyze_convergence(runs_dir="multiple_runs", config_path=None):
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"Analysis saved to: {output_path}")
     
-    # Save numerical results
+    # Save numerical results (exclude Random from statistics)
     results = {
         'kl_matrix': kl_matrix,
         'run_names': run_names,
+        'trained_runs': trained_runs,
         'mean_kl_divergence': np.mean(upper_triangle),
         'std_kl_divergence': np.std(upper_triangle)
     }
@@ -257,20 +347,19 @@ def analyze_convergence(runs_dir="multiple_runs", config_path=None):
         pickle.dump(results, f)
     
     # Test if KL divergences are significantly different from random
-    # Generate random probability distributions for comparison
-    n_random = 1000
-    action_dim = all_probs[run_names[0]].shape[1]
-    random_kls = []
+    # Compare trained runs vs random baseline
+    trained_vs_random = []
+    for run_name in trained_runs:
+        avg_probs_run = np.mean(all_probs[run_name], axis=0)
+        avg_probs_random = np.mean(all_probs["Random"], axis=0)
+        kl_vs_random = compute_kl_divergence(avg_probs_run, avg_probs_random)
+        trained_vs_random.append(kl_vs_random)
     
-    for _ in range(n_random):
-        # Generate two random probability distributions
-        rand1 = np.random.dirichlet(np.ones(action_dim))
-        rand2 = np.random.dirichlet(np.ones(action_dim))
-        random_kl = compute_kl_divergence(rand1, rand2)
-        random_kls.append(random_kl)
-    
-    # Mann-Whitney U test
-    statistic, p_value = mannwhitneyu(upper_triangle, random_kls, alternative='less')
+    # Compare inter-run KL divergences vs run-to-random KL divergences
+    if upper_triangle.size > 0 and trained_vs_random:
+        statistic, p_value = mannwhitneyu(upper_triangle, trained_vs_random, alternative='less')
+    else:
+        p_value = 1.0
     
     # Print summary
     print(f"\n=== Convergence Analysis Summary ===")
@@ -278,13 +367,13 @@ def analyze_convergence(runs_dir="multiple_runs", config_path=None):
     print(f"Std KL Divergence: {np.std(upper_triangle):.4f}")
     print(f"Min KL Divergence: {np.min(upper_triangle):.4f}")
     print(f"Max KL Divergence: {np.max(upper_triangle):.4f}")
-    print(f"Mean Random KL Divergence: {np.mean(random_kls):.4f}")
+    print(f"Mean KL vs Random Baseline: {np.mean(trained_vs_random):.4f}")
     print(f"Statistical test (vs random): p = {p_value:.4f}")
     
     if p_value < 0.05:
-        print("✓ KL divergences are significantly LOWER than random (convergence detected)")
+        print("✓ Trained runs converged (more similar to each other than to random)")
     else:
-        print("~ KL divergences not significantly different from random")
+        print("~ Trained runs not significantly more similar than random baseline")
     
     if np.mean(upper_triangle) < 0.1:
         print("✓ Models show HIGH convergence (similar strategies)")
@@ -294,7 +383,7 @@ def analyze_convergence(runs_dir="multiple_runs", config_path=None):
         print("✗ Models show LOW convergence (diverse strategies)")
     
     # Add statistical test result to plot
-    sig_text = f"vs Random: p = {p_value:.3f}" + (" *" if p_value < 0.05 else "")
+    sig_text = f"Convergence: p = {p_value:.3f}" + (" *" if p_value < 0.05 else "")
     ax2.text(0.02, 0.98, sig_text, transform=ax2.transAxes, 
             verticalalignment='top', bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8))
     

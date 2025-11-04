@@ -43,7 +43,7 @@ def create_observation_model(model_type: str, params: dict):
     
     return model_classes[model_type](**params)
 
-def create_strategy(strategy_type: str, observation_model=None):
+def create_strategy(strategy_type: str, observation_model=None, model_path=None):
     """Factory function to create strategy objects from string identifiers"""
     from core.strategies import (
         TargetStrongest, 
@@ -54,7 +54,7 @@ def create_strategy(strategy_type: str, observation_model=None):
         TargetBelievedStrongest
     )
     
-    if strategy_type == "RLlibStrategy":
+    if strategy_type == "RLStrategy":
         from rllib_marl.strategy import RLlibStrategy
         from . import config_loader
         
@@ -66,13 +66,18 @@ def create_strategy(strategy_type: str, observation_model=None):
                 config['observation']['params']
             )
         
-        # Build checkpoint path
-        algorithm = config['rllib']['algorithm']
-        base_path = config['rllib']['checkpoint_base_path']
-        num_players = config['game']['num_players']
-        gameplay_type = config['gameplay']['type']
-        obs_model_type = config['observation']['model_type']
-        checkpoint_path = os.path.abspath(f"{base_path}/{algorithm}/{num_players}_players/{gameplay_type}_{obs_model_type}")
+        # Use provided model_path or build default checkpoint path
+        if model_path:
+            checkpoint_path = os.path.abspath(model_path)
+            print(f"Using model from: {checkpoint_path}")
+        else:
+            # Build checkpoint path from config
+            algorithm = config['rllib']['algorithm']
+            base_path = config['rllib']['checkpoint_base_path']
+            num_players = config['game']['num_players']
+            gameplay_type = config['gameplay']['type']
+            obs_model_type = config['observation']['model_type']
+            checkpoint_path = os.path.abspath(f"{base_path}/{algorithm}/{num_players}_players/{gameplay_type}_{obs_model_type}")
         
         return RLlibStrategy(
             checkpoint_path=checkpoint_path,
@@ -103,16 +108,16 @@ def create_strategy(strategy_type: str, observation_model=None):
     return strategy_classes[strategy_type]()
 
 
-def create_strategies_list(strategy_types: list, observation_model=None, use_random_for_training=False):
+def create_strategies_list(strategy_types: list, observation_model=None, use_random_for_training=False, model_path=None):
     """Factory function to create a list of strategy objects"""
     if use_random_for_training:
-        # Replace RLlibStrategy with TargetRandom for training
-        safe_strategy_types = ["TargetRandom" if s == "RLlibStrategy" else s for s in strategy_types]
-        return [create_strategy(strategy_type, observation_model) for strategy_type in safe_strategy_types]
-    return [create_strategy(strategy_type, observation_model) for strategy_type in strategy_types]
+        # Replace RLStrategy with TargetRandom for training
+        safe_strategy_types = ["TargetRandom" if s == "RLStrategy" else s for s in strategy_types]
+        return [create_strategy(strategy_type, observation_model, model_path) for strategy_type in safe_strategy_types]
+    return [create_strategy(strategy_type, observation_model, model_path) for strategy_type in strategy_types]
 
 # Convenience function to get all configured objects at once
-def create_game_objects(config_path=None, use_random_for_training=False):
+def create_game_objects(config_path=None, use_random_for_training=False, model_path=None):
     from . import config_loader
     
     if config_path:
@@ -125,7 +130,7 @@ def create_game_objects(config_path=None, use_random_for_training=False):
         config['observation']['model_type'], 
         config['observation']['params']
     )
-    strategies = create_strategies_list(config['players']['strategy_types'], observation_model, use_random_for_training)
+    strategies = create_strategies_list(config['players']['strategy_types'], observation_model, use_random_for_training, model_path)
     
     return {
         'gameplay': gameplay,

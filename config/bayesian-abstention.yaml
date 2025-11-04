@@ -1,4 +1,4 @@
-# Default configuration for Nuel Sim
+# Configuration for Bayesian Abstention Observation Model
 game:
   num_players: 3
   num_rounds: 20  # null for infinite
@@ -9,11 +9,11 @@ gameplay:
   has_ghost: true
 
 observation:
-  model_type: "SimpleObservation"  # "BayesianMeanObservation", "BayesianAbstentionObservation", "SimpleObservation"
+  model_type: "BayesianAbstentionObservation"  # "BayesianMeanObservation", "BayesianAbstentionObservation", "SimpleObservation"
   params:
     num_players: 3
     has_ghost: true
-    # setup_shots: 0  # Comment out for non-Bayesian models
+    setup_shots: 0  # For Bayesian models
 
 players:
   marksmanship_range: [0.1, 0.9]

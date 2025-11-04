@@ -82,7 +82,8 @@ def get_ppo_config():
         )
         .training(
             gamma=0.98,
-            train_batch_size=256
+            train_batch_size=256,
+            lr=1e-4,
         )
         # .resources(num_gpus=0, num_cpus_for_main_process=1)
     )

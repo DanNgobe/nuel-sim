@@ -16,16 +16,16 @@ import os
 from scipy.stats import chi2_contingency
 from statsmodels.stats.proportion import proportion_confint
 
-def evaluate(num_episodes=100, single_strategy=None, output_path=None):
-    # Create game objects using factories to avoid circular imports
-    game_objects = create_game_objects()
-    
+def evaluate(num_episodes=100, single_strategy=None, output_path=None, model_path=None):
     cfg = config.get_config()
+    
+    # Create game objects using the updated factory system
+    game_objects = create_game_objects(model_path=model_path)
     
     # Handle single strategy mode
     if single_strategy:
         # Create the same strategy for all players
-        strategies = [create_strategy(single_strategy, game_objects['observation_model']) 
+        strategies = [create_strategy(single_strategy, game_objects['observation_model'], model_path) 
                      for _ in range(cfg['game']['num_players'])]
     else:
         strategies = game_objects['strategies']
@@ -427,12 +427,20 @@ def evaluate(num_episodes=100, single_strategy=None, output_path=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate game performance.")
     parser.add_argument("--episodes", type=int, default=2000, help="Number of episodes to run (default: 2000)")
-    parser.add_argument("--strategy", type=str, help="Single strategy to use for all players (e.g., 'TargetRandom', 'DQNStrategy')")
+    parser.add_argument("--strategy", type=str, help="Single strategy to use for all players (e.g., 'TargetRandom', 'RLStrategy')")
+    parser.add_argument("--model-path", type=str, help="Path to trained model checkpoint (for RLlibStrategy)")
     parser.add_argument("--output", type=str, help="Output directory to save plots (if not specified, plots are shown)")
+    parser.add_argument("--config", type=str, help="Configuration file to use")
     args = parser.parse_args()
+
+    # Load config if specified
+    if args.config:
+        config.load_config(args.config)
+        print(f"Loaded configuration from: {args.config}")
 
     # Create output directory if specified
     if args.output:
         os.makedirs(args.output, exist_ok=True)
 
-    evaluate(num_episodes=args.episodes, single_strategy=args.strategy, output_path=args.output)
+    evaluate(num_episodes=args.episodes, single_strategy=args.strategy, 
+             output_path=args.output, model_path=args.model_path)

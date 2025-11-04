@@ -72,15 +72,7 @@ def main():
         print(f"Loaded configuration from: {args.config}")
 
     # Create game objects
-    game_objects = create_game_objects()
-
-      # Override model path if provided
-    if args.model_path:
-        # Update strategies that use RLlib
-        for i, strategy_type in enumerate(game_objects['strategies']):
-            if hasattr(strategy_type, 'checkpoint_path'):
-                strategy_type.checkpoint_path = args.model_path
-                print(f"Using model from: {args.model_path}")
+    game_objects = create_game_objects(model_path=args.model_path)
                 
     cfg = config.get_config()
     

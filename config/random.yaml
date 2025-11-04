@@ -1,17 +1,17 @@
 # Default configuration for Nuel Sim
 game:
-  num_players: 3
+  num_players: 4
   num_rounds: 20  # null for infinite
   run_mode: "visualize"  # "visualize" or "single"
   
 gameplay:
-  type: "SequentialGamePlay"  # "SequentialGamePlay", "RandomGamePlay", "SimultaneousGamePlay"
+  type: "RandomGamePlay"  # "SequentialGamePlay", "RandomGamePlay", "SimultaneousGamePlay"
   has_ghost: true
 
 observation:
   model_type: "SimpleObservation"  # "BayesianMeanObservation", "BayesianAbstentionObservation", "SimpleObservation"
   params:
-    num_players: 3
+    num_players: 4
     has_ghost: true
     # setup_shots: 0  # Comment out for non-Bayesian models
 

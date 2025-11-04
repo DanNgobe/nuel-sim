@@ -31,12 +31,45 @@ class RLlibStrategy(BaseStrategy):
         super().__init__("rllib_strategy")
         self.observation_model = observation_model
         self.policy_id = policy_id
+        self.checkpoint_path = checkpoint_path
 
         # Register the environment before loading checkpoint
         self._register_nuel_env()
 
-        # Load the trained algorithm and get the RLModule
-        self.algorithm = Algorithm.from_checkpoint(checkpoint_path)
+        # Build a fresh algorithm and load weights manually to avoid metrics state issues
+        from rllib_marl.config import get_ppo_config
+        from pathlib import Path
+        import pickle
+        
+        checkpoint_path = Path(checkpoint_path).resolve()
+        
+        # Build algorithm with correct config
+        ppo_config = get_ppo_config()
+        self.algorithm = ppo_config.build()
+        
+        # Try to restore just the learner/module state (the actual trained weights)
+        try:
+            learner_dir = checkpoint_path / "learner_group" / "learner"
+            if learner_dir.exists():
+                # Load the module state directly
+                rl_module_dir = learner_dir / "rl_module" / self.policy_id
+                if rl_module_dir.exists() and (rl_module_dir / "module_state.pkl").exists():
+                    print(f"Loading trained weights from {rl_module_dir}")
+                    with open(rl_module_dir / "module_state.pkl", "rb") as f:
+                        module_state = pickle.load(f)
+                    
+                    # Get the RLModule and set its state
+                    rl_module = self.algorithm.get_module(self.policy_id)
+                    rl_module.set_state(module_state)
+                    print("Successfully loaded trained weights for RLlibStrategy")
+                else:
+                    print("Warning: No module state found, using random initialization")
+            else:
+                print("Warning: No learner directory found, using random initialization")
+        except Exception as e:
+            print(f"Warning: Failed to restore weights: {e}")
+            print("Using freshly initialized model")
+        
         self.rl_module = self.algorithm.get_module(self.policy_id)
         self.action_dist_cls = self.rl_module.get_inference_action_dist_cls()
         self._initialized = True
